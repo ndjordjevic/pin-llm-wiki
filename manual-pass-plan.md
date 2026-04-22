@@ -12,7 +12,7 @@ By the end of this pass, we should be able to answer:
 
 1. **Fetching per type** — does `WebFetch` work for a docs site, or do we need Jina Reader / Firecrawl / headless browser?
 2. **Citation discipline** — can the ingest agent actually cite every claim back to a specific raw file? How does it fail?
-3. **Taxonomy** — does the simple `sources/` + `topics/` structure work, or does `entity-concept` feel necessary?
+3. **Topics structure** — does the single `topics/` folder stay coherent across three diverse sources, or do pages blur into each other?
 4. **Wiki pages per source** — what does `standard` detail actually produce? Is the per-type template (landing page replacer for web, README-based for github, "replace watching" for youtube) the right shape?
 5. **Token cost** — what does a real `standard` ingest cost in tokens / dollars for each source type?
 6. **Idempotency** — if we crash partway, can we resume cleanly?
@@ -61,7 +61,6 @@ Three deliberately diverse sources — one per core type we care about for MVP:
      sources/
      topics/
      syntheses/
-     inbox/
    ```
 4. Pre-install: verify `yt-dlp` is available for the YouTube step.
 5. Have a notes file open — `manual-pass-findings.md` — to capture observations in real time.
@@ -78,7 +77,6 @@ Three deliberately diverse sources — one per core type we care about for MVP:
   version: 1
   domain: "Agentic GenAI learning journey"
   detail_level: standard
-  taxonomy: simple
   source_types: [web, github, youtube]
   ```
 - Write `CLAUDE.md` with the load-bearing instructions block from `research.md §10`.
@@ -190,7 +188,7 @@ Keep `manual-pass-findings.md` structured as:
 ...
 
 ## Cross-cutting observations
-- Taxonomy — did `simple` hold up?
+- Topics structure — did `topics/` stay coherent across sources?
 - Citation discipline — easy or hard?
 - Merging — clean or messy?
 - Idempotency — did we hit any partial-state issues?
@@ -228,7 +226,6 @@ Keep `manual-pass-findings.md` structured as:
 - Cost guard / budget enforcement.
 - Auto-commit per ingest (we commit manually after each step to get clean diffs).
 - Playwright / headless browser integration (evaluated only if WebFetch + Jina both fail).
-- graphify integration.
 
 ---
 

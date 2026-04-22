@@ -9,6 +9,7 @@
 ## 1. Vision
 
 Karpathy's LLM Wiki pattern is powerful but manual:
+
 - You clip web pages by hand (Obsidian Web Clipper)
 - You drop files into `raw/` yourself
 - You invoke the agent manually per source
@@ -44,22 +45,26 @@ These are non-negotiable — everything else negotiates around them:
 
 ### Three layers (same as Karpathy)
 
-| Layer | Owner | Description |
-|---|---|---|
-| `inbox.md` | Human | Checklist of URLs to ingest |
-| `raw/` | Fetch agent | Fetched/downloaded source content |
-| `wiki/` | Ingest agent | Compiled, linked, queryable pages |
+
+| Layer      | Owner        | Description                       |
+| ---------- | ------------ | --------------------------------- |
+| `inbox.md` | Human        | Checklist of URLs to ingest       |
+| `raw/`     | Fetch agent  | Fetched/downloaded source content |
+| `wiki/`    | Ingest agent | Compiled, linked, queryable pages |
+
 
 ### New additions vs Karpathy
 
-| Feature | Karpathy | pin-llm-wiki |
-|---|---|---|
-| Getting raw content | Manual (Obsidian Web Clipper) | Automated fetch (per source type) |
-| Schema setup | Manual, per-project | `init` command with interview |
-| Ingestion trigger | Manual per source | Batch from inbox, auto-mark complete |
-| Detail level | Implicit | Explicit: `brief / standard / deep` |
-| Packaging | None | Skill → CLI → MCP (phased) |
-| Taxonomy | Fixed per-project | Interview-driven, domain-appropriate |
+
+| Feature             | Karpathy                      | pin-llm-wiki                         |
+| ------------------- | ----------------------------- | ------------------------------------ |
+| Getting raw content | Manual (Obsidian Web Clipper) | Automated fetch (per source type)    |
+| Schema setup        | Manual, per-project           | `init` command with interview        |
+| Ingestion trigger   | Manual per source             | Batch from inbox, auto-mark complete |
+| Detail level        | Implicit                      | Explicit: `brief / standard / deep`  |
+| Packaging           | None                          | Skill → CLI → MCP (phased)           |
+| Taxonomy            | Fixed per-project             | Interview-driven, domain-appropriate |
+
 
 ---
 
@@ -77,7 +82,6 @@ These are non-negotiable — everything else negotiates around them:
 - [ ] https://github.com/safishamsi/graphify/
 - [ ] https://github.com/hilash/cabinet
 - [ ] https://www.youtube.com/watch?v=FZxEUAfMNRw
-- [ ] https://arxiv.org/abs/2310.11511 <!-- detail:deep -->
 
 ## Completed
 
@@ -86,20 +90,17 @@ These are non-negotiable — everything else negotiates around them:
 
 ### Source type detection (auto, with override)
 
-| Pattern | Detected type | Fetch strategy |
-|---|---|---|
-| `github.com/<org>/<repo>` | GitHub repo | README + structure + key files (+ optional clone) |
-| `youtube.com/watch?v=` or `youtu.be/` | YouTube video | Transcript via yt-dlp |
-| `youtube.com/playlist` | YouTube playlist | Loop over video IDs |
-| `arxiv.org/abs/` or `arxiv.org/pdf/` | arXiv paper | Download PDF → text extract |
-| `*.substack.com`, `medium.com`, known blog hosts | Blog post | Single-page fetch |
-| `x.com/*/status/` or `twitter.com/*/status/` | X / Twitter thread | Thread fetch (requires tooling; see risks) |
-| `*.github.io`, `/docs`, `/documentation` in path | Documentation site | Crawl up to configured depth |
-| Everything else | Web page | Landing page + docs discovery |
 
-Override syntax: `- [ ] https://example.com <!-- type:docs depth:3 detail:deep -->`
+| Pattern                                | Detected type | Fetch strategy                                    |
+| -------------------------------------- | ------------- | ------------------------------------------------- |
+| `github.com/<org>/<repo>`              | GitHub repo   | README + structure + key files (+ optional clone) |
+| `youtube.com/watch?v=` or `youtu.be/` | YouTube video | Transcript via yt-dlp                             |
+| Everything else                        | Web page      | Landing page + docs discovery                     |
 
-Tags supported: `type:*`, `depth:N`, `detail:*`, `skip`, `refresh`, `clone` (github).
+
+Override syntax: `- [ ] https://example.com <!-- depth:3 detail:deep -->`
+
+Tags supported: `depth:N`, `detail:*`, `skip`, `refresh`, `clone` (github). Source type is inferred from the URL.
 
 ### Inbox rules
 
@@ -112,31 +113,23 @@ Tags supported: `type:*`, `depth:N`, `detail:*`, `skip`, `refresh`, `clone` (git
 
 ## 4. Raw Folder — Source Categories
 
-Generalized from rp6502-kb. Discord/PDFs are opt-in, not defaults.
-
 ```
 raw/
   web/          -- scraped web pages & docs as .md
   github/       -- repo content (summary .md by default, full clone opt-in)
   youtube/      -- transcripts as .md
-  papers/       -- arXiv and similar PDFs + extracted text
-  blogs/        -- blog posts, substack, medium (as .md)
-  threads/      -- X/Twitter threads (as .md)
   assets/       -- downloaded images referenced by wiki pages
   README.md     -- LLM-maintained index of all raw content
 ```
 
-Opt-in categories (added via init interview or later):
-- `pdfs/` — manually added PDFs
-- `discord/` — Discord exports (as in rp6502-kb)
-- `slack/` — Slack exports
-- `notes/` — your own notes
+Additional source categories can be added later via config (e.g. `pdfs/`, `notes/`).
 
 Each subfolder has a `README.md` kept in sync by the agent.
 
 ### Fetch behavior per type
 
-**Web / docs site:**
+**Web page:**
+
 - Fetch landing page
 - Discover docs (`/docs`, `/documentation`, `/guide`, sitemap.xml)
 - Crawl up to depth: `brief`=1 (landing only), `standard`=docs index + ~10 key pages, `deep`=full crawl within domain
@@ -144,6 +137,7 @@ Each subfolder has a `README.md` kept in sync by the agent.
 - Respect `robots.txt`, rate-limit, set UA
 
 **GitHub repo:**
+
 - Always: README, top-level structure, CHANGELOG, LICENSE, package manifest
 - `standard`: + docs/ folder, examples/, main module READMEs
 - `deep`: + key source files identified by agent
@@ -151,28 +145,22 @@ Each subfolder has a `README.md` kept in sync by the agent.
 - With `<!-- clone -->`: full `git clone` to `raw/github/<org>/<repo>/` (gitignored)
 
 **YouTube:**
+
 - yt-dlp auto-subs → VTT → clean markdown
 - Fallback: if no transcript, flag in inbox (`<!-- fetch-failed:no-transcript -->`) and skip
 - Save as `raw/youtube/<video-id>-<title>.md`
-
-**arXiv / papers:**
-- Download PDF to `raw/papers/<arxiv-id>.pdf`
-- Extract text via `pdftotext` or similar → `raw/papers/<arxiv-id>.md`
-- Include abstract + sections; images stay as references
-
-**Blog / thread:**
-- Single-page fetch, cleaned to markdown
-- X threads need thread-aware tooling (Nitter mirror, or manual paste) — flagged as risky
 
 ---
 
 ## 5. Detail Levels
 
-| Level | Raw fetch | Wiki pages per source | Page verbosity | Rough token cost (ingest) |
-|---|---|---|---|---|
-| `brief` | Landing / README / transcript only | 1 page | ~300–500 words, bullet-heavy | ~5–20k tokens |
-| `standard` | + docs index + key sections | 2–5 pages | ~500–1000 words, headings + prose | ~30–100k tokens |
-| `deep` | Full crawl / full repo / full paper | 5–20+ pages | Comprehensive, all features, examples | ~200k–1M+ tokens |
+
+| Level      | Raw fetch                           | Wiki pages per source | Page verbosity                        | Rough token cost (ingest) |
+| ---------- | ----------------------------------- | --------------------- | ------------------------------------- | ------------------------- |
+| `brief`    | Landing / README / transcript only  | 1 page                | ~300–500 words, bullet-heavy          | ~5–20k tokens             |
+| `standard` | + docs index + key sections         | 2–5 pages             | ~500–1000 words, headings + prose     | ~30–100k tokens           |
+| `deep`     | Full crawl / full repo / full paper | 5–20+ pages           | Comprehensive, all features, examples | ~200k–1M+ tokens          |
+
 
 Detail level is **locked at wiki init** and stored in `.pin-llm-wiki.yml`. Per-item override via `<!-- detail:X -->`. No global change after init (to avoid inconsistent wiki pages).
 
@@ -192,10 +180,9 @@ wiki/
   sources/          -- one page per ingested source
   topics/           -- cross-source articles (LLM-organized)
   syntheses/        -- filed query answers worth keeping
-  inbox/            -- rough notes awaiting organization
 ```
 
-**Simplified from rp6502-kb**: dropped the fixed `entities/` vs `concepts/` split. The line is fuzzy for most domains (is LangChain an entity or a concept?). Instead, a single `topics/` folder holds all cross-source articles, organized by tag. If a given wiki wants the entity/concept split, the init interview can generate it — but it's not the default.
+A single `topics/` folder holds all cross-source articles, organized by tag. (Simplified from rp6502-kb's fixed `entities/` + `concepts/` split — the line is fuzzy for most domains.)
 
 ### Page frontmatter
 
@@ -203,8 +190,11 @@ wiki/
 ---
 type: source | topic | synthesis
 tags: [tag1, tag2]
-related: [[page]], [[other-page]]
-sources: [[source-page]]      # raw source citations (wikilinks to source pages)
+related:
+  - "[[page]]"
+  - "[[other-page]]"
+sources:
+  - "[[source-page]]"
 detail_level: brief | standard | deep
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
@@ -220,14 +210,10 @@ version: 1
 created: 2026-04-21
 domain: "Agentic GenAI learning journey"
 detail_level: standard
-taxonomy: simple  # simple | entity-concept | custom
-source_types: [web, github, youtube, papers, blogs]
+source_types: [web, github, youtube]
 auto_commit: true
 auto_lint: batch  # never | batch | per-ingest
 auto_mark_complete: true
-llm:
-  provider: anthropic
-  model: claude-sonnet-4-6
 ```
 
 ---
@@ -244,12 +230,14 @@ Earlier draft proposed a FetchOrchestrator with 4 specialized sub-agents. Revert
 
 ### Phasing
 
-| Phase | Packaging | Use |
-|---|---|---|
-| 1 (MVP) | Skill-only (`~/.claude/skills/pin-llm-wiki/`) | Prove the workflow end-to-end |
-| 2 | Python CLI (`pip install pin-llm-wiki`) | Automation, CI, cron, sharing |
-| 3 | MCP server | Native tool calls from any MCP-aware agent |
-| 4 | Plugin / Obsidian companion | Optional polish |
+
+| Phase   | Packaging                                     | Use                                        |
+| ------- | --------------------------------------------- | ------------------------------------------ |
+| 1 (MVP) | Skill-only (`~/.claude/skills/pin-llm-wiki/`) | Prove the workflow end-to-end              |
+| 2       | Python CLI (`pip install pin-llm-wiki`)       | Automation, CI, cron, sharing              |
+| 3       | MCP server                                    | Native tool calls from any MCP-aware agent |
+| 4       | Plugin / Obsidian companion                   | Optional polish                            |
+
 
 **Validate Phase 1 manually before committing to Phase 2.** The risk is over-investing in packaging before the workflow itself is stable.
 
@@ -258,7 +246,7 @@ Earlier draft proposed a FetchOrchestrator with 4 specialized sub-agents. Revert
 Power users want `fetch` / `ingest` / `lint` separately. Day-to-day use should be one command:
 
 ```
-pin-llm-wiki add <url>     # or just: pin add <url>
+/pin-llm-wiki add <url>
 ```
 
 → detects type, fetches, ingests, marks inbox `[x]`, commits.
@@ -283,6 +271,7 @@ Generalized from rp6502-kb AGENTS.md:
 ### Wiki page expectations per source type
 
 *Product/framework (e.g. LangChain):*
+
 - What it does (1 para) — every claim cited
 - Key features (bullets with citations)
 - Architecture overview
@@ -292,6 +281,7 @@ Generalized from rp6502-kb AGENTS.md:
 - Links to raw source pages
 
 *GitHub repo:*
+
 - What it does
 - Installation
 - Key features
@@ -300,22 +290,16 @@ Generalized from rp6502-kb AGENTS.md:
 - Maintenance status (last commit, stars at ingest time)
 
 *YouTube video (the "replace watching" test):*
+
 - What the video is about (1 para — you should NOT need to watch it after reading)
 - Key points / takeaways (bullets with timestamp citations)
 - Notable quotes or code shown
 - Context (speaker, series, date)
 
-*Paper:*
-- Claim / contribution (1 para)
-- Method summary
-- Results / findings
-- Limitations
-- How it relates to existing wiki topics
-
 ### Merge/update rules (when a topic page already exists)
 
 - Add new facts; do not duplicate.
-- If new source contradicts existing claim → add `> **Conflict:**` block citing both sources; do not silently overwrite.
+- If new source contradicts existing claim → add `> **Conflict:*`* block citing both sources; do not silently overwrite.
 - Source authority tie-breaker lives in the generated CLAUDE.md (e.g., official docs > repo > blog > YouTube).
 
 ---
@@ -325,10 +309,11 @@ Generalized from rp6502-kb AGENTS.md:
 Lint looks for *inter-source* connections, which don't exist after ingesting one source. So:
 
 - **Default trigger:** end of an inbox batch processing run.
-- **Optional:** manual `pin lint` at any time.
+- **Optional:** manual `/pin-llm-wiki lint` at any time.
 - **Not default:** per-ingest lint. Waste.
 
 Lint checks:
+
 1. **Citation coverage** — every factual sentence in every page has a citation. Load-bearing.
 2. **Contradictions** — pages with conflicting claims. Rank by source authority.
 3. **Orphans** — pages with no inbound `[[wikilinks]]`.
@@ -342,17 +327,15 @@ Lint reports findings; it doesn't auto-fix. Fixes are a separate user-driven pas
 
 ## 10. Init Flow & Interview
 
-`pin-llm-wiki init` in an empty folder → conversational interview:
+`/pin-llm-wiki init` in an empty folder → conversational interview:
 
 1. **What is this wiki about?** (free text, domain description)
 2. **Detail level?** `brief / standard / deep` — shows estimated cost per typical source
-3. **Which source types will you use?** (multi-select: web, github, youtube, papers, blogs, threads, pdfs, discord, slack, notes)
-4. **Taxonomy:** `simple` (just `topics/`) / `entity-concept` (rp6502-kb style) / `custom` (define your own)
-5. **Git:** initialize repo now? (default: yes). Auto-commit each ingest? (default: yes)
-6. **Lint cadence:** `batch` (end of run) / `per-ingest` / `manual only`
-7. **Auto-mark inbox `[x]` after ingest?** (default: yes)
-8. **LLM provider:** claude / openai / other
-9. **Privacy:** any domains to allowlist or blocklist for scraping?
+3. **Which source types will you use?** (multi-select: web, github, youtube — more can be added later)
+4. **Git:** initialize repo now? (default: yes). Auto-commit each ingest? (default: yes)
+5. **Lint cadence:** `batch` (end of run) / `per-ingest` / `manual only`
+6. **Auto-mark inbox `[x]` after ingest?** (default: yes)
+7. **Privacy:** any domains to allowlist or blocklist for scraping?
 
 Answers → written to `.pin-llm-wiki.yml` and baked into generated `CLAUDE.md` / `AGENTS.md`.
 
@@ -370,7 +353,6 @@ Answers → written to `.pin-llm-wiki.yml` and baked into generated `CLAUDE.md` 
     web/README.md
     github/README.md
     youtube/README.md
-    (other selected types)/
     assets/
   wiki/
     index.md
@@ -403,7 +385,7 @@ Without this, the wiki is just files on disk. With it, the wiki becomes the codi
 ## 11. Full Flow Example — "Agentic GenAI Learning Journey"
 
 1. `mkdir agentic-ai-wiki && cd agentic-ai-wiki`
-2. `pin-llm-wiki init` → interview → scaffold + git init
+2. `/pin-llm-wiki init` → interview → scaffold + git init
 3. Populate `inbox.md`:
 
 ```markdown
@@ -416,16 +398,14 @@ Without this, the wiki is just files on disk. With it, the wiki becomes the codi
 - [ ] https://www.youtube.com/watch?v=FZxEUAfMNRw&list=PLmk_-gnv1YVL8Lk170JCrYZ4h_tWBrkYm
 ```
 
-4. `pin-llm-wiki run` (or `/pin-run`) — processes all pending inbox items:
-   - Detects types, fetches each, saves to `raw/`
-   - Ingests each into `wiki/`
-   - Marks inbox `[x]`
-   - Runs a single lint pass at the end
-   - Commits (if enabled)
-
-5. Review in Obsidian or preferred markdown viewer.
-
-6. Ask the coding agent a question — it reads `wiki/index.md`, drills into topics, cites pages.
+1. `/pin-llm-wiki run` — processes all pending inbox items:
+  - Detects types, fetches each, saves to `raw/`
+  - Ingests each into `wiki/`
+  - Marks inbox `[x]`
+  - Runs a single lint pass at the end
+  - Commits (if enabled)
+2. Review in Obsidian or preferred markdown viewer.
+3. Ask the coding agent a question — it reads `wiki/index.md`, drills into topics, cites pages.
 
 **Time budget:** ~2 minutes of human time (write inbox, kick off run, review). LLM time: minutes to hours depending on detail level and source count. LLM cost: $1–$50 depending on detail level (init interview surfaces this up front).
 
@@ -434,22 +414,26 @@ Without this, the wiki is just files on disk. With it, the wiki becomes the codi
 ## 12. Wiki Update Strategy
 
 ### Adding sources
-- Drop URL in `inbox.md` → `pin add` or `pin run`.
+
+- Drop URL in `inbox.md` → `/pin-llm-wiki add` or `/pin-llm-wiki run`.
 - Agent merges into existing topic pages; doesn't duplicate.
 
 ### Refreshing sources
+
 - Tag: `- [ ] https://... <!-- refresh -->`
 - Fetch agent re-fetches, computes hash of cleaned content.
 - If hash differs: update raw file, ingest agent updates touched wiki pages, log the refresh.
 - If hash identical: skip, log as "no change."
 
 ### Removing sources
-- `pin remove <slug>` → deletes `raw/<type>/<slug>` and `wiki/sources/<slug>.md`.
+
+- `/pin-llm-wiki remove <slug>` → deletes `raw/<type>/<slug>` and `wiki/sources/<slug>.md`.
 - Lint runs automatically after a remove: flags orphaned `[[wikilinks]]` and sentences that cited the removed source.
 - User decides: rewrite those sentences (re-cite from another source) or drop them.
 - **Soft-delete first?** Move to `wiki/.archive/` before hard-delete — configurable.
 
 ### Schema migrations (CLAUDE.md / AGENTS.md changes)
+
 - `version` bumps in `.pin-llm-wiki.yml`.
 - Migration script reformats existing pages if needed.
 - Rare.
@@ -512,10 +496,6 @@ Things I handwaved over. Must be validated in manual pass.
 - No API keys in `raw/` or `wiki/`.
 - Some users point this at internal docs behind auth — auth story is out of scope for MVP.
 
-### Twitter / X threads
-
-- X restricts scraping heavily. Likely needs manual paste or third-party mirror (Nitter). Flagged as risky.
-
 ### Wiki integrity under deletion
 
 - Removing a source can orphan `[[wikilinks]]` across 15+ pages. Lint must catch this. Soft-delete by default.
@@ -527,40 +507,29 @@ Things I handwaved over. Must be validated in manual pass.
 
 ---
 
-## 15. Graphify Integration
+## 15. Open Questions & Decisions
 
-graphify (`github.com/safishamsi/graphify`) builds clustered knowledge graphs from text. Complementary, not competing:
 
-- pin-llm-wiki produces the canonical wiki (markdown, humans + agents).
-- graphify consumes the wiki to produce a graph view (HTML + clusters).
-- `rp6502-kb-graphify` already demonstrates this pairing.
+| #   | Question                      | Options                                          | Lean                                                                     |
+| --- | ----------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------ |
+| 1   | CLI vs skills-first?          | CLI from start vs skills → CLI                   | Skills first, CLI phase 2 ✓                                              |
+| 2   | GitHub raw: clone or summary? | Full clone vs .md summary                        | Summary default, `--clone` opt-in (open)                                 |
+| 3   | Detail level changeable?      | Lock at init vs per-item override only           | Lock global, per-item override ✓                                         |
+| 4   | Web scraping engine           | WebFetch vs headless browser vs Jina/Firecrawl   | WebFetch first, fall back to Jina Reader if skeletons (needs validation) |
+| 5   | Transcript tool               | yt-dlp vs YouTube API                            | yt-dlp                                                                   |
+| 6   | Auto-lint timing              | Never / per-ingest / batched                     | **Batched** (changed from earlier draft)                                 |
+| 7   | Refresh diff                  | Hash vs date vs LLM                              | Hash ✓                                                                   |
+| 8   | Multi-LLM support             | Claude-only vs agnostic                          | Claude-first, abstract later                                             |
+| 9   | Init interview UX             | Conversational vs form                           | Conversational                                                           |
+| 10  | Detail level naming           | low/mid/high vs brief/standard/deep              | **brief/standard/deep** ✓                                                |
+| 11  | Default command               | Split (fetch/ingest/lint) vs combined (`add`)    | Combined `add` is default, split for power users                         |
+| 12  | Agent architecture            | Sub-agents per type vs one agent branching       | One agent branching (MVP); sub-agents if needed later                    |
+| 13  | Git integration               | Optional vs required                             | Required by default, can opt out                                         |
 
-Future: add `pin graph` as a thin wrapper that runs graphify on the wiki.
-
----
-
-## 16. Open Questions & Decisions
-
-| # | Question | Options | Lean |
-|---|---|---|---|
-| 1 | CLI vs skills-first? | CLI from start vs skills → CLI | Skills first, CLI phase 2 ✓ |
-| 2 | GitHub raw: clone or summary? | Full clone vs .md summary | Summary default, `--clone` opt-in (open) |
-| 3 | Detail level changeable? | Lock at init vs per-item override only | Lock global, per-item override ✓ |
-| 4 | Web scraping engine | WebFetch vs headless browser vs Jina/Firecrawl | WebFetch first, fall back to Jina Reader if skeletons (needs validation) |
-| 5 | Transcript tool | yt-dlp vs YouTube API | yt-dlp |
-| 6 | Auto-lint timing | Never / per-ingest / batched | **Batched** (changed from earlier draft) |
-| 7 | Refresh diff | Hash vs date vs LLM | Hash ✓ |
-| 8 | Multi-LLM support | Claude-only vs agnostic | Claude-first, abstract later |
-| 9 | Init interview UX | Conversational vs form | Conversational |
-| 10 | Detail level naming | low/mid/high vs brief/standard/deep | **brief/standard/deep** ✓ |
-| 11 | Taxonomy | Fixed (entity/concept) vs simple vs configurable | Simple default, configurable via init |
-| 12 | Default command | Split (fetch/ingest/lint) vs combined (`add`) | Combined `add` is default, split for power users |
-| 13 | Agent architecture | Sub-agents per type vs one agent branching | One agent branching (MVP); sub-agents if needed later |
-| 14 | Git integration | Optional vs required | Required by default, can opt out |
 
 ---
 
-## 17. Next Steps
+## 16. Next Steps
 
 1. **Manual end-to-end pass** on 3 diverse URLs (1 web/docs, 1 github, 1 youtube) in Claude Code. Goal: surface which risks in §14 are real vs paranoia.
 2. **Update this doc** with findings from the manual pass.
@@ -573,10 +542,9 @@ Future: add `pin graph` as a thin wrapper that runs graphify on the wiki.
 
 ---
 
-## 18. Name
+## 17. Name
 
-`pin-llm-wiki` — connects to existing `pinrag`, `pinrag-cli`, `pinrag-cloud`, `pinrag-plugin` projects. "pin" = bookmark/pin knowledge.
-
-Alternatives if needed: `llm-wiki-kit`, `wikify`, `wikibot`, `memex` (evocative of Bush).
+`pin-llm-wiki` — connects to the `pinrag` family of projects. "pin" = bookmark/pin knowledge. Decided.
 
 ---
+
