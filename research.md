@@ -1,8 +1,9 @@
 # pin-llm-wiki — Research & Design Brainstorm
 
-**Date:** 2026-04-21 (updated after first review)
-**Status:** Brainstorm / pre-design — pending manual flow validation
+**Date:** 2026-04-21 (updated 2026-04-23 after manual end-to-end pass)
+**Status:** Brainstorm / design — **manual pass complete**, ready for PRD
 **Goal:** Design a generalized, automated, agent-driven LLM Wiki system inspired by Karpathy's pattern — packaged as a reusable tool.
+**Manual-pass findings:** `manual-pass-findings.md` — all §14 risks either confirmed or dismissed; key decisions extracted into design rules (see §15 and §18 below).
 
 ---
 
@@ -108,6 +109,7 @@ Tags supported: `depth:N`, `detail:*`, `skip`, `refresh`, `clone` (github). Sour
 - `<!-- skip -->` tag → agent ignores.
 - `<!-- refresh -->` tag → agent re-fetches and updates in place.
 - Inbox is the source of truth for "done or not" — survives crashes and partial runs.
+- **Move semantics (validated in manual pass):** completed items must be *moved* from `## Pending` to `## Completed`, not just flipped to `[x]`. Section membership is part of the state. Any two-section checklist where the section encodes state needs explicit move semantics. The agent's ingest instruction must say "move", not "mark".
 
 ---
 
@@ -130,25 +132,32 @@ Each subfolder has a `README.md` kept in sync by the agent.
 
 **Web page:**
 
+- **First: check for `<domain>/llms.txt`** — many docs sites (LangChain, Anthropic, etc.) publish a machine-readable concept index. One fetch replaces or scopes the crawl. Validated in manual pass — LangChain's llms.txt gave the full concept list for all 4 products in a single call.
 - Fetch landing page
 - Discover docs (`/docs`, `/documentation`, `/guide`, sitemap.xml)
-- Crawl up to depth: `brief`=1 (landing only), `standard`=docs index + ~10 key pages, `deep`=full crawl within domain
-- Save as `raw/web/<domain>/<page-slug>.md`
-- Respect `robots.txt`, rate-limit, set UA
+- Crawl up to depth: `brief`=1 (landing only), `standard`=docs index + ~10 key pages (or llms.txt + ~4 product overviews), `deep`=full crawl within domain
+- Save as `raw/web/<domain>.md` (compiled, one file per source) at brief/standard; `raw/web/<domain>/<page-slug>.md` only at deep.
+- Follow redirects and log the *final* URL, not the original (old domains silently redirect; e.g. `python.langchain.com` → `docs.langchain.com`).
+- Respect `robots.txt`, rate-limit, set UA.
+- **WebFetch is sufficient for JS-heavy modern docs sites** (Next.js/Vercel validated in manual pass). Jina Reader / Firecrawl / headless browser kept as fallback only if WebFetch returns a skeleton on a specific site — not the default.
 
 **GitHub repo:**
 
-- Always: README, top-level structure, CHANGELOG, LICENSE, package manifest
+- Use `gh` CLI (not WebFetch) — validated in manual pass: structured JSON responses, no JS rendering issues, handles auth.
+- Always: README (via `gh api repos/<org>/<repo>/readme`), top-level structure (`gh api .../contents/`), default branch (from `defaultBranchRef`, never assume `main`), latest release tag (via `gh release list --limit 1`).
 - `standard`: + docs/ folder, examples/, main module READMEs
 - `deep`: + key source files identified by agent
-- Default: save as compiled `raw/github/<org>/<repo>.md`
-- With `<!-- clone -->`: full `git clone` to `raw/github/<org>/<repo>/` (gitignored)
+- Branch override: `<!-- branch:X -->` in inbox.md targets a specific branch; otherwise use default.
+- Default: save as compiled `raw/github/<org>-<repo>.md` (one file per repo, flat — not nested)
+- With `<!-- clone -->`: full `git clone` to `raw/github/<org>-<repo>/` (gitignored)
 
 **YouTube:**
 
-- yt-dlp auto-subs → VTT → clean markdown
+- `yt-dlp --dump-json` first → captures description, chapters, title, channel, duration, upload date in one call. Chapters map directly to wiki-page section headings (validated in manual pass).
+- Then `yt-dlp --write-auto-sub --sub-format vtt --skip-download --sub-lang en-orig` for the transcript. `en-orig` is the best-quality track where available.
+- Parse VTT: rolling-caption format (each cue shows 2 lines, last line is live word-by-word). Strategy: take the first clean line per cue (no `<c>` tags), deduplicate consecutive identical lines. Group by chapter. SRT format is a cleaner alternative when available.
 - Fallback: if no transcript, flag in inbox (`<!-- fetch-failed:no-transcript -->`) and skip
-- Save as `raw/youtube/<video-id>-<title>.md`
+- Save as `raw/youtube/<video-id>-<slug>.md`
 
 ---
 
@@ -193,13 +202,35 @@ tags: [tag1, tag2]
 related:
   - "[[page]]"
   - "[[other-page]]"
-sources:
+sources:          # topic/synthesis pages only — see rule below
   - "[[source-page]]"
 detail_level: brief | standard | deep
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 ---
 ```
+
+**Frontmatter rules (validated in manual pass):**
+
+- `sources:` is **only for topic and synthesis pages** — it lists the source pages they draw from. Source pages themselves MUST NOT include `sources:` (they *are* the source; self-reference is meaningless). A source page with `sources: [[self]]` was the most common bug in the first ingest run.
+- `related:` is for cross-references between wiki pages (topic ↔ topic, source ↔ source). Empty list (`related: []`) is valid when no cross-links exist yet. Resolved at lint time, not ingest time.
+- Obsidian-compatible wikilinks must be quoted list items (`- "[[page]]"`), not inline bracket arrays.
+
+### Citation rules
+
+**Paths:**
+- Wiki-to-raw links use **relative-from-file paths**, not root-relative. From `wiki/sources/<slug>.md` that's `../../raw/...`; from `wiki/topics/<slug>.md` same. Root-relative breaks in Obsidian and standard markdown renderers.
+
+**Banner vs per-sentence:**
+- **Single-source pages** (page draws all claims from one raw file): one banner at the top — `_All claims below are sourced from [../../raw/.../file.md](../../raw/.../file.md) unless otherwise noted._` No per-sentence citations. Validated: per-sentence citations on a single-source page are pure noise.
+- **Multi-source pages** (topic pages, or source pages that incorporate a second raw file): keep the banner for the primary source; add per-paragraph citations `([raw/path](../../raw/path))` only where a *different* raw file supplies the claim.
+
+**Citation layering (validated):**
+- Source pages cite *raw files* (via banner or per-paragraph).
+- Topic pages cite *raw files* where claims originate.
+- Overview / synthesis pages cite *`[[source page]]` wikilinks* — they synthesize across sources, not from raw directly. Each layer cites the layer below it.
+
+**Enforcement:** the linter rejects any factual claim without a citation chain reaching a raw file.
 
 ### Config file
 
@@ -314,14 +345,25 @@ Lint looks for *inter-source* connections, which don't exist after ingesting one
 
 Lint checks:
 
-1. **Citation coverage** — every factual sentence in every page has a citation. Load-bearing.
+1. **Citation coverage** — every factual sentence in every page has a citation chain to a raw file. Load-bearing.
 2. **Contradictions** — pages with conflicting claims. Rank by source authority.
-3. **Orphans** — pages with no inbound `[[wikilinks]]`.
-4. **Data gaps** — concepts mentioned but lacking a topic page.
-5. **Missing cross-references** — pages that mention other wiki-known entities without linking.
-6. **Stale sources** — sources last refreshed > N days ago (for fast-moving domains).
+3. **Orphans** — pages with no inbound `[[wikilinks]]`. **Includes structural pages** (`overview.md`, `log.md`) — manual pass confirmed these get missed if not in the `index.md` scaffold; the generated `index.md` must link to them.
+4. **Data gaps** — concepts mentioned but lacking a topic page. When ≥2 sources discuss the same concept, lint suggests a topic page.
+5. **Missing cross-references** — pages that mention other wiki-known entities without linking. Manual pass found 2 of 3 source pages had empty `related:` — resolving cross-refs is a lint-time responsibility, not ingest-time.
+6. **Stale sources** — sources last refreshed > **30 days** ago (configurable default). Fast-moving projects may need a shorter threshold; evergreen docs a longer one.
+7. **Terminology collisions** — same term used for different concepts across sources (manual pass found "skills" in Superpowers vs DeepAgents). Flag for disambiguation via a topic page or a note on both source pages.
 
-Lint reports findings; it doesn't auto-fix. Fixes are a separate user-driven pass.
+Lint reports findings; it doesn't auto-fix. Fixes are a separate user-driven pass — with two exceptions considered for auto-fix:
+- Add `overview.md` / `log.md` links to `index.md` if missing (structural, no judgment needed).
+- Create topic page *stubs* for concepts with ≥2-source coverage (scaffold only; human fills content).
+
+### Topic-page creation timing (validated)
+
+Topic pages are created **at lint time**, not ingest time. Ingest creates source pages only. Topic pages require cross-source evidence — creating them from a single source produces stubs that rot. The manual pass confirmed this: after 3 sources ingested, 3 topic pages were ready to create (tool access scoping, human-in-the-loop, layered architecture), each with 3-source coverage.
+
+### Agent-consumption harvest (new workflow)
+
+When a fresh agent session produces a synthesis insight better than what's in the wiki — e.g., a comparison table that the overview lacks — that insight is a candidate to write back into a topic page. The manual pass Step 5 demonstrated this: the agent's answer to a cross-source question was more precise than `overview.md`'s treatment of the same topic. Harvest is a manual step for MVP; formalize as a command (`/pin-llm-wiki harvest`) in a later phase.
 
 ---
 
@@ -355,14 +397,15 @@ Answers → written to `.pin-llm-wiki.yml` and baked into generated `CLAUDE.md` 
     youtube/README.md
     assets/
   wiki/
-    index.md
+    index.md          (links to overview.md and log.md by default)
     log.md
     overview.md
     sources/
     topics/
     syntheses/
-    inbox/
 ```
+
+**Index scaffold:** generated `index.md` must include navigation links to `overview.md` and `log.md` out of the gate. Manual pass confirmed these get missed otherwise.
 
 ### Generated CLAUDE.md — load-bearing instructions
 
@@ -456,10 +499,11 @@ Things I handwaved over. Must be validated in manual pass.
 
 ### Fetching is harder than it looks
 
-- **JS-heavy docs sites** (Vercel, Mintlify, Next.js, Docusaurus): `WebFetch` often returns skeletons. May need headless browser (Playwright, Puppeteer) or a content extraction API (Jina Reader, Firecrawl).
-- **Rate limits & bot detection** on Cloudflare-fronted sites.
-- **SPAs with client-side routing** — crawling by href often misses real content URLs.
+- ~~**JS-heavy docs sites** (Vercel, Mintlify, Next.js, Docusaurus): `WebFetch` often returns skeletons.~~ **Dismissed after manual pass.** WebFetch handled LangChain (Next.js/Vercel) without skeleton problems. Keep Jina Reader / headless browser as fallback for specific failures, not default.
+- **Rate limits & bot detection** on Cloudflare-fronted sites — still a real risk, not exercised by manual pass.
+- **SPAs with client-side routing** — crawling by href often misses real content URLs. Mitigated by the llms.txt discovery pattern (fetch llms.txt first; only crawl if absent).
 - **robots.txt & ToS** — some sites forbid scraping; need allowlist and respectful defaults.
+- **Stale URLs / domain migrations** (new from manual pass): `python.langchain.com` silently redirects to `docs.langchain.com`; deprecated doc sites 404. Fetch layer must follow redirects and log the *final* URL.
 
 ### Transcripts
 
@@ -545,6 +589,47 @@ Things I handwaved over. Must be validated in manual pass.
 ## 17. Name
 
 `pin-llm-wiki` — connects to the `pinrag` family of projects. "pin" = bookmark/pin knowledge. Decided.
+
+---
+
+## 18. Manual-pass validation summary (2026-04-23)
+
+Three sources ingested by hand into `agentic-ai-wiki/`: obra/superpowers (GitHub), a YouTube tutorial (XXplTbQR9to), and langchain.com (web docs). Detail level: standard. Full notes in `manual-pass-findings.md`. Results relevant to this doc:
+
+### Confirmed principles (don't second-guess in PRD)
+
+- **Citations-first works.** Banner + per-paragraph model produced zero hallucinations across 3 sources and 1 agent-consumption test.
+- **Wiki-for-agents works.** A fresh Claude Code session, given only `CLAUDE.md` + `wiki/`, produced a cited, synthesized, cross-source answer with no training-data contamination. Principle #5 (wiki is for both humans and agents) validated at 3-source scale.
+- **One compiled raw file per source** is the right granularity at brief/standard. Per-page files only at deep.
+- **Defer topic pages to lint time.** Ingest creates source pages only. Pre-3-source topic stubs are waste.
+
+### Dismissed risks (move out of §14 concern list)
+
+- WebFetch on JS-heavy docs sites. LangChain rendered fine.
+
+### New rules adopted into the design (integrated above)
+
+- llms.txt discovery pattern (§4).
+- Inbox move semantics (§3).
+- Relative-from-file citation paths (§6).
+- Banner vs per-paragraph citation (§6).
+- Topic pages at lint time, cross-refs resolved at lint time (§9).
+- Orphan lint for structural pages (§9).
+- Staleness threshold: 30d default (§9).
+- Agent-consumption harvest workflow (§9).
+- Redirect-follow with final-URL logging (§4, §14).
+- Citation layering: synthesis → `[[source]]` → raw (§6).
+
+### Still open for PRD to decide
+
+- Should lint auto-create topic stubs, or only report? (Leaning: stub creation is safe to automate.)
+- Citation semantics for synthesis/overview pages — confirmed `[[source pages]]` is right, but `overview.md` currently has no citations at all. Should this be enforced?
+- Deep-detail raw layout — flat compiled file vs per-page directory.
+- Formal harvest command (`/pin-llm-wiki harvest`) — MVP or Phase 2?
+
+### Token cost reality check
+
+Full 3-source pass at standard depth: ~98k combined input/output tokens. Well under the 200k guard rail. At current API rates: roughly $0.50–$1.50 per full pass. Init interview cost estimates can be confident for brief/standard; deep still open.
 
 ---
 
