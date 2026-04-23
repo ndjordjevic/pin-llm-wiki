@@ -75,13 +75,36 @@ Each finding is tagged:
 
 ## Step 2: YouTube — XXplTbQR9to
 
-*(fill in after completing Step 2)*
-
 ### Fetch
+
+- **Tool used:** `yt-dlp --dump-json` (metadata/description/chapters) + `yt-dlp --write-auto-sub --sub-format vtt --skip-download --sub-lang en-orig` (transcript)
+- **Result:** Success — `en-orig` English caption track downloaded cleanly (257 KB VTT)
+- **VTT parsing:** Rolling-caption format (each cue shows 2 lines, last line is live word-by-word). Strategy: take the first clean line (no `<c>` tags) per cue = the finalized/completed line. Deduplicate consecutive identical lines. Result: clean ~28k char transcript grouped by chapter.
+- **Description extraction:** `yt-dlp --dump-json` gave full metadata including description text, timestamped chapters, publish date, channel — all in one call.
+- **Chapters:** 6 chapters extracted: Intro / What Is Paperclip? / Get Your Server Running / Create Your Company / Give Your Agents Tools / Put Your Company to Work
+- `[CONFIRMED]` yt-dlp + en-orig VTT is the right tool — no JS runtime needed, no ffmpeg needed for subtitle-only download
+- `[CONFIRMED]` `--dump-json` is the right first call for any YouTube source — gives description, chapters, upload date, channel, duration before touching the VTT
 
 ### Ingest
 
+- **Raw file:** `raw/youtube/XXplTbQR9to-paperclip-tutorial.md` — metadata + description + chapter table + cleaned transcript (sections by chapter heading)
+- **Wiki page created:** 1 (`wiki/sources/paperclip-tutorial.md`) — "replace watching" format per plan
+- **Topic pages created:** 0 — deferred; cross-source patterns emerging (tool access scoping, human-in-the-loop policy) but single source not enough to anchor a topic page yet
+- **Pages updated:** wiki/index.md, wiki/overview.md, wiki/log.md, raw/youtube/README.md, inbox.md
+
 ### Findings
+
+- `[CONFIRMED]` One wiki page is the right unit for a tutorial YouTube video at standard detail. The 25-minute video distills to ~1 page covering: what it is, deployment platform, company setup, agent model, tools, workflow.
+- `[CONFIRMED]` Description + chapters = the best editorial scaffold. The 6 chapters map directly to wiki sections — no guesswork about structure.
+- `[DECISION]` Wiki page covers Brave Search API and Resend by name as the two tool examples — user explicitly requested this. Secrets mechanism (sealing, reuse across agents) also noted since it's a design pattern, not just a tutorial step.
+- `[DECISION]` Hostinger VPS named explicitly as the deployment server shown in the tutorial. OpenAI Codex vs Claude API distinction also noted — this is a real choice point for readers.
+- `[CONFIRMED]` "Replace watching" acceptance bar met: after reading the wiki page, a reader understands what Paperclip is, how to deploy it, how to set up a company, what agents/heartbeats are, how tools work, and how to assign work — without watching 25 minutes of video.
+- `[CONFIRMED]` Citation discipline natural — all claims from single raw file, banner citation used (per CLAUDE.md rule).
+- `[RISK]` VTT rolling-caption format is non-trivial to parse correctly — the overlap strategy (take first clean line per cue) works but is fragile. A cleaner approach would be `--sub-format srt` if available, or Whisper for videos without subtitle tracks.
+- `[OPEN]` Should raw file preserve full transcript or a condensed version? At 28k chars it's manageable for standard; at deep detail we may want the full transcript with timestamps for pinpoint citation.
+- **Token cost fetch:** ~1k input tokens (yt-dlp CLI output, no LLM used for fetch)
+- **Token cost ingest:** ~35–45k input tokens (full raw file read → wiki page + supporting files)
+- **Total estimate:** ~35–45k tokens for this source at standard depth (mostly ingest, transcript-heavy)
 
 ---
 
@@ -129,8 +152,8 @@ Each finding is tagged:
 | Step | Source | Tokens in | Tokens out | Notes |
 |---|---|---|---|---|
 | scaffold | — | — | — | one-time |
-| 1 | superpowers | | | |
-| 2 | youtube | | | |
+| 1 | superpowers | ~20k | ~8k | |
+| 2 | youtube | ~1k (CLI only) | ~40k | transcript-heavy ingest |
 | 3 | langchain | | | |
 | 4 | lint | | | |
 | 5 | agent test | | | |
