@@ -110,14 +110,47 @@ Each finding is tagged:
 
 ## Step 3: Web — langchain.com
 
-*(fill in after completing Step 3)*
-
 ### Fetch strategy used
-<!-- WebFetch → Jina Reader → direct docs URL — record which worked and what the others returned -->
+
+- **Tool:** WebFetch — worked on all pages. No JS-skeleton problem. LangChain uses Next.js/Vercel but pages rendered to readable content.
+- **Pages fetched (7 total):**
+  1. https://www.langchain.com/ — landing page (products, nav, value prop)
+  2. https://docs.langchain.com/ — docs index (product sections, getting-started paths)
+  3. https://docs.langchain.com/oss/python/langchain/overview — LangChain framework overview
+  4. https://docs.langchain.com/oss/python/langgraph/overview — LangGraph overview
+  5. https://docs.langchain.com/langsmith — LangSmith overview
+  6. https://docs.langchain.com/oss/python/deepagents/overview — DeepAgents overview
+  7. https://docs.langchain.com/llms.txt — full concept index for all products
+- **Redirect note:** python.langchain.com → docs.langchain.com (308 permanent). Old domain dead; use docs.langchain.com.
+- **404 note:** langchain-ai.github.io/langgraph/concepts/ returns 404. LangGraph docs migrated to docs.langchain.com.
+- **Not needed:** Jina Reader, Firecrawl, headless browser. WebFetch sufficient.
 
 ### Ingest
 
+- **Raw file:** `raw/web/langchain.com.md` — compiled single file (landing + docs + 4 product overviews + llms.txt)
+- **Wiki pages created:** 1 (`wiki/sources/langchain.md`)
+- **Topic pages created:** 0 — cross-source patterns visible (human-in-the-loop, tool access, skills) but deferred to lint pass
+- **Pages updated:** wiki/index.md (count 2→3), wiki/overview.md (3-source synthesis), wiki/log.md, raw/web/README.md, inbox.md
+
 ### Findings
+
+`[CONFIRMED]` **WebFetch sufficient for docs sites** — the #1 unknown from research.md §14 turned out to be a non-issue. LangChain Next.js/Vercel renders fine via WebFetch. No fallback needed.
+
+`[CONFIRMED]` **llms.txt pattern** — LangChain publishes a machine-readable concept index at `/llms.txt`. One fetch returns the full structured concept index for all products. Check for this file first on any docs site before deciding how many pages to crawl.
+
+`[DECISION]` **Single raw file for multi-page web source** — compiled all 7 fetched pages into one `raw/web/langchain.com.md`. Matches the GitHub convention (one compiled file per source). At standard depth, one file is cleaner and easier to cite from.
+
+`[DECISION]` **Raw file naming for web sources** — `raw/web/<domain>.md` (e.g., `langchain.com.md`). Consistent and predictable. For sites needing per-page files at deep detail, could use a `raw/web/langchain.com/` directory instead.
+
+`[CONFIRMED]` **One wiki page for a multi-product site** — a single `wiki/sources/langchain.md` covering all 4 products worked well at standard depth. The "when to use which" section anchors the page and prevents it from being just a feature dump.
+
+`[RISK]` **Stale URLs / domain migrations** — python.langchain.com redirects silently; langgraph GitHub Pages 404s. Automated fetches must follow redirects and log final URLs, not original ones. Stale inbox URLs are a real failure mode.
+
+`[OPEN]` **Cross-source topic pages** — clear patterns across all three sources: human-in-the-loop (all), tool access scoping (all), composable skills/capabilities (Superpowers + DeepAgents). Should become topic pages during lint pass (Step 4).
+
+- **Token cost fetch:** ~12–15k input tokens (7 WebFetch calls, each processed by small model)
+- **Token cost ingest:** ~8–10k input tokens (raw file → wiki page + supporting files)
+- **Total estimate:** ~20–25k tokens at standard depth (cheapest of the three — structured docs are denser and better organized than video transcripts)
 
 ---
 
