@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rtk ls *)",
+      "Bash(rtk read *)",
+      "Bash(rtk grep *)",
+      "Bash(rtk proxy *)",
+      "Bash(rtk git *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(rtk find *)",
+      "WebFetch(domain:example.com)",
+      "WebFetch(domain:www.iana.org)",
+      "Bash(rtk rsync *)",
+      "Bash(rm -rf /Users/nenaddjordjevic/.claude/skills/pin-llm-wiki)",
+      "Bash(ln -s /Users/nenaddjordjevic/LLMProjects/pin-llm-wiki/skill /Users/nenaddjordjevic/.claude/skills/pin-llm-wiki)",
+      "Bash(chmod +x *)",
+      "Bash(git commit *)"
+    ]
+  }
+}
