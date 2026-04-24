@@ -1,7 +1,7 @@
 # pin-llm-wiki — Product Requirements Document
 
-**Date:** 2026-04-23
-**Status:** Draft 1 — post-manual-pass
+**Date:** 2026-04-24
+**Status:** Phase 1 complete — skill files implemented, dogfood-validated, bug-fix pass done. Skill files live in `~/.claude/skills/pin-llm-wiki/` (not tracked in this git repo).
 **Phase:** 1 (Skills-only MVP)
 **Inputs:** `research.md`, `manual-pass-plan.md`, `manual-pass-findings.md`
 
