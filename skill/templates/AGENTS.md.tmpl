@@ -1,0 +1,235 @@
+# {{DOMAIN}} wiki — agent instructions
+
+> **Created:** {{CREATED_DATE}} | **Detail level:** {{DETAIL_LEVEL}} (default; per-source overrides via `<!-- detail:X -->` inbox tags)
+
+---
+
+## For AI agents working in this repo
+
+Before answering **any question** about {{DOMAIN}}, you MUST:
+
+1. Read `wiki/index.md` to identify relevant pages.
+2. Follow `[[wikilinks]]` to drill into relevant source, topic, and synthesis pages.
+3. Cite wiki page names in your answer.
+4. If the answer is not in the wiki, say so clearly — **do not infer from training data**.
+
+This wiki is the authoritative source for this domain. Training-data knowledge about {{DOMAIN}} is noise here; the wiki is signal.
+
+> **Phase 1 note:** In Claude Code, use the `/pin-llm-wiki` subcommands (`init`, `add`, `run`, `lint`, `remove`) to automate this workflow. In Copilot, Cursor, and other tools, follow the workflow steps below directly — they are fully self-contained.
+
+---
+
+## Wiki structure
+
+```
+wiki/
+  index.md          ← start here; lists every page, counts sources
+  overview.md       ← rolling synthesis of all sources (cites [[source pages]])
+  log.md            ← append-only record of every ingest/refresh
+  sources/          ← one page per ingested source (<slug>.md)
+  topics/           ← cross-source concept pages (created at lint time)
+  syntheses/        ← deep-dive documents (manual, human-driven)
+  .archive/         ← soft-deleted sources (ignore unless needed)
+
+raw/
+  README.md
+  [github/]         ← immutable GitHub repo captures
+  [youtube/]        ← immutable YouTube video captures (transcript + metadata)
+  [web/]            ← immutable web page/site captures
+  assets/           ← downloaded media/binaries
+
+inbox.md            ← human-owned; agent only touches it within defined workflows
+.pin-llm-wiki.yml   ← config (detail level, source types, lint cadence, etc.)
+```
+
+**Load order for any question:** `wiki/index.md` → relevant source/topic pages → raw files only for direct citation.
+
+---
+
+## Ingest workflow
+
+Run this workflow when ingesting a source (via `add` or `run`). Execute steps in order.
+
+**Step 1 — Read the raw file.**
+The raw file is in `raw/<type>/<slug>...md`. Read it fully before writing any wiki content.
+
+**Step 2 — Create or update `wiki/sources/<slug>.md`.**
+
+Frontmatter:
+```yaml
+---
+type: source
+tags: []
+related: []
+detail_level: {{DETAIL_LEVEL}}
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+---
+```
+
+Rules:
+- **MUST NOT include a `sources:` field.** Source pages do not cite themselves.
+- First line of body: summary paragraph (what this source is and why it matters).
+- Second line: banner citation — `_All claims below are sourced from ../../raw/<type>/<file>.md unless otherwise noted._`
+- Then: sectioned body. Per-type structure:
+  - **GitHub:** what it does, installation, key features, architecture, example usage, maintenance status.
+  - **YouTube:** what the video is about (1 paragraph — sufficient to replace watching), key points by chapter, notable quotes, speaker context.
+  - **Web/product:** what it does, key features, architecture/concepts, main APIs, when to use, ecosystem.
+- Add per-paragraph citations only when a **second** raw file contributes to this page; otherwise the banner covers it.
+
+**Step 3 — Do NOT create topic pages.** Topic page creation happens at lint time only.
+
+**Step 4 — Update `wiki/index.md`.**
+- If `<slug>` already has a row in the Sources table: update the date and `detail_level` in-place. Do not add a second row or change the count.
+- If no row exists: add `| <slug> | <type> | {{DETAIL_LEVEL}} | <YYYY-MM-DD> | |` and increment the source count in the `_N sources ingested._` line.
+
+**Step 5 — Update `wiki/overview.md`.**
+Read `wiki/overview.md` and check the `sources:` frontmatter list:
+- **If `[[<slug>]]` is already in `sources:`** (refresh case): update the `updated:` date only. Write the file. Stop — do not add another entry or another paragraph.
+- **If `sources: []` (first source ever ingested):** replace the placeholder body (the `_No sources ingested yet..._` paragraph) with an opening synthesis paragraph describing this source and what it contributes. Cite `[[<slug>]]`. Update `sources:` to `sources:\n  - "[[<slug>]]"`.
+- **If `sources:` already has entries but does not include `[[<slug>]]`:** add a new paragraph covering what the new source contributes relative to existing ones. Cite `[[<slug>]]`. Append `  - "[[<slug>]]"` to the `sources:` list.
+Update the `updated:` date. Write the file. This page cites `[[source page slugs]]`, not raw files directly.
+
+**Step 6 — Append to `wiki/log.md`** (newest at top):
+```
+## YYYY-MM-DD | ingest | <slug> | <one-line summary>
+
+- Created: wiki/sources/<slug>.md
+- Updated: wiki/index.md, wiki/overview.md, wiki/log.md, raw/<type>/README.md, inbox.md
+```
+
+**Step 7 — Update `raw/<type>/README.md`.**
+- If a row for `<slug>` already exists: update the fetch date in-place. Do not add a second row.
+- If no row exists: append the new row using the row format from the source type protocol below.
+
+**Step 8 — Move inbox line.**
+Move the URL from `## Pending` to `## Completed`. Append `<!-- ingested YYYY-MM-DD -->`.
+If `auto_mark_complete: {{AUTO_MARK_COMPLETE}}`, also flip `[ ]` → `[x]`.
+
+**Step 9 — Git commit (if `auto_commit: {{AUTO_COMMIT}}`).**
+`git commit -m "ingest: <slug>"`
+
+### Merge rules (updating an existing topic page)
+
+- Add new facts; do not duplicate.
+- On a conflict: insert a `> **Conflict:**` block citing both sources. Source authority order: official docs > GitHub README > YouTube (official channel) > blogs/secondary. Do not silently overwrite.
+
+---
+
+## Source type protocols
+
+{{SOURCE_PROTOCOLS}}
+
+---
+
+## Citation rules
+
+1. **Every factual claim must have a citation chain to a raw file.** No citation → no claim.
+2. **Source pages** use a banner citation at the top. Add per-paragraph inline citations only when a second raw file contributes to the page.
+3. **Topic and synthesis pages** list contributing source pages in `sources:` frontmatter. Inline citations point to specific raw files.
+4. **`wiki/overview.md`** cites `[[source pages]]` via wikilinks — not raw files directly.
+5. **Citation path format:** always relative-from-file.
+   - From `wiki/sources/`: `../../raw/<type>/<file>.md`
+   - From `wiki/topics/` or `wiki/syntheses/`: `../raw/<type>/<file>.md`
+   - Never root-relative (`/raw/...` or `raw/...` without `../` prefix).
+6. **Obsidian compatibility:** wikilinks in frontmatter use list form — `- "[[slug]]"`, not inline `[[slug]]` arrays.
+
+---
+
+## Frontmatter rules
+
+**Source pages** (`wiki/sources/*.md`) — MUST NOT include `sources:`:
+```yaml
+---
+type: source
+tags: []
+related: []
+detail_level: {{DETAIL_LEVEL}}
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+---
+```
+
+**Topic pages** (`wiki/topics/*.md`):
+```yaml
+---
+type: topic
+tags: []
+sources:
+  - "[[source-slug-1]]"
+  - "[[source-slug-2]]"
+related: []
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+---
+```
+
+**Synthesis pages** (`wiki/syntheses/*.md`) — same shape as topic pages but `type: synthesis`.
+
+**Overview page** (`wiki/overview.md`) — `type: synthesis`; `sources:` updated as sources are added.
+
+---
+
+## Refresh workflow
+
+To re-fetch an already-ingested source:
+
+1. Add `<!-- refresh -->` to its `## Completed` line in `inbox.md`.
+2. Run `/pin-llm-wiki run`.
+
+The run command scans `## Completed` for `<!-- refresh -->` and:
+1. Re-fetches the source using the same protocol.
+2. Strips any frontmatter field whose value matches `YYYY-MM-DD` or an ISO 8601 timestamp pattern from both copies before comparing. If unchanged, logs `refresh: <slug> (no change)` and stops.
+3. If changed: overwrites the raw file, re-runs ingest steps 2–5 and 7 (updates wiki pages; skips step 6 log, inbox-move, and commit), appends a log entry `refresh: <slug> | content updated`.
+4. Removes `<!-- refresh -->` from the inbox line, appends `<!-- refreshed YYYY-MM-DD -->`, preserves `[ ]`/`[x]` state. If `auto_commit: true`: commits.
+
+---
+
+## Lint checks
+
+Run `/pin-llm-wiki lint` to check wiki health.
+
+| # | Check | Severity |
+|---|---|---|
+| 1 | Citation coverage — every factual claim has a chain to a raw file | ERROR (WARN on overview.md) |
+| 2 | Contradictions — conflicting claims across pages | WARN |
+| 3 | Orphan pages — no inbound `[[wikilinks]]` (includes overview.md and log.md) | WARN |
+| 4 | Data gaps — concept in ≥2 source pages with no topic page | INFO |
+| 5 | Missing cross-references — page mentions a wiki-known entity without linking | WARN |
+| 6 | Stale sources — last refresh > 30 days | INFO |
+| 7 | Terminology collisions — same term used for different concepts across sources | WARN |
+| 8 | Frontmatter shape — source pages must NOT have `sources:` | ERROR |
+| 9 | Citation path format — must be relative-from-file, not root-relative | ERROR |
+| 10 | Inbox consistency — inbox line marked [x] but still under ## Pending | WARN |
+
+Auto-fixes applied on every lint run:
+- Missing `overview.md` / `log.md` links in `wiki/index.md`.
+- Stub topic pages for concepts flagged by Check #4 (scaffold only; body left for human or next `add`).
+
+Checks #2 (contradictions) and #7 (terminology collisions) are deferred in Phase 1 — reported as informational notes only.
+
+---
+
+## Manual harvest
+
+When a cross-source answer is worth keeping permanently, promote it to a topic or synthesis stub:
+
+1. Create `wiki/topics/<slug>.md` or `wiki/syntheses/<slug>.md`.
+2. Frontmatter: `type: topic` (or `synthesis`), `sources:` list as wikilinks, `tags`, `created`.
+3. Body: opening paragraph citing `[[source pages]]` (not raw files). Add inline raw-file citations for specific claims.
+4. Run `/pin-llm-wiki lint` to verify citation coverage and cross-references.
+
+Do not auto-generate topic body content. The stub names the concept and links it; fill body when you have adequate sources.
+
+A formal `/pin-llm-wiki harvest` command is deferred. This manual flow is the MVP path.
+
+---
+
+## Remove workflow
+
+`/pin-llm-wiki remove <slug>`:
+1. Validate slug exists in `wiki/index.md` Sources table.
+2. Soft-delete: move `wiki/sources/<slug>.md` to `wiki/.archive/wiki/sources/`. For raw files, check these exact paths only — `raw/<type>/<slug>.md` (single file) and `raw/<type>/<slug>/` (deep clone directory) — and move whichever exists to `wiki/.archive/raw/<type>/` (preserving structure). Do not glob or prefix-match. Update `wiki/index.md` (remove row, decrement count) and append to `wiki/log.md`.
+3. Run lint immediately: flags orphaned `[[wikilinks]]` and pages whose `sources:` frontmatter still references `[[<slug>]]`.
+4. Report to user; do not auto-rewrite.
+5. **To undo:** files are in `wiki/.archive/`. Move them back to their original paths and restore the index.md row manually.

@@ -154,6 +154,7 @@ Always:
 - `wiki/topics/`
 - `wiki/syntheses/`
 - `wiki/.archive/`
+- `.cursor/rules/`
 
 Conditionally:
 - If `github` in SOURCE_TYPES: `raw/github/`
@@ -213,13 +214,13 @@ Create empty placeholder files to preserve empty directories in git:
 - `wiki/syntheses/.gitkeep`
 - `wiki/.archive/.gitkeep`
 
-### Step 7 — Generated CLAUDE.md
+### Step 7 — Agent instruction files
 
-This is the most important file. It must be **fully self-contained** — a fresh Claude Code session in this repo must be able to run the full workflow from CLAUDE.md alone, without the skill installed.
+Three files are generated from the same content so that Claude Code, GitHub Copilot, and Cursor all behave identically in this wiki.
 
-Build CLAUDE.md in this order:
+**7a. Assemble AGENTS_BODY** (canonical content, used by all three files below):
 
-**7a.** Read `~/.claude/skills/pin-llm-wiki/templates/CLAUDE.md.tmpl`.
+Read `~/.claude/skills/pin-llm-wiki/templates/AGENTS.md.tmpl`.
 Substitute:
 - `{{DOMAIN}}` → DOMAIN
 - `{{DETAIL_LEVEL}}` → DETAIL_LEVEL
@@ -227,21 +228,37 @@ Substitute:
 - `{{AUTO_COMMIT}}` → AUTO_COMMIT as lowercase string
 - `{{AUTO_MARK_COMPLETE}}` → AUTO_MARK_COMPLETE as lowercase string
 
-**7b.** Build the source protocol block to substitute for `{{SOURCE_PROTOCOLS}}`:
+Build the source protocol block to substitute for `{{SOURCE_PROTOCOLS}}`:
+- If `github` in SOURCE_TYPES: read `~/.claude/skills/pin-llm-wiki/templates/protocols/github.md` and append.
+- If `youtube` in SOURCE_TYPES: read `~/.claude/skills/pin-llm-wiki/templates/protocols/youtube.md` and append.
+- If `web` in SOURCE_TYPES: read `~/.claude/skills/pin-llm-wiki/templates/protocols/web.md` and append.
 
-- If `github` in SOURCE_TYPES: read `~/.claude/skills/pin-llm-wiki/templates/protocols/github.md` and append to the block.
-- If `youtube` in SOURCE_TYPES: read `~/.claude/skills/pin-llm-wiki/templates/protocols/youtube.md` and append to the block.
-- If `web` in SOURCE_TYPES: read `~/.claude/skills/pin-llm-wiki/templates/protocols/web.md` and append to the block.
+Replace `{{SOURCE_PROTOCOLS}}` with the assembled block.
+Hold the fully-substituted result in memory as **AGENTS_BODY**.
 
-Replace `{{SOURCE_PROTOCOLS}}` in the template with this block.
+**7b. Write `AGENTS.md`** — the universal agent operating manual (read by Copilot, Cursor, Claude Code, and 20+ other tools):
 
-**7c.** Write the fully-substituted content to `CLAUDE.md`.
+Write AGENTS_BODY to `AGENTS.md`.
+
+**7c. Write `CLAUDE.md`** — thin Claude Code adapter:
+
+Read `~/.claude/skills/pin-llm-wiki/templates/CLAUDE.md.tmpl`.
+Substitute `{{DOMAIN}}` → DOMAIN.
+Write to `CLAUDE.md`.
+(This file contains `@AGENTS.md` — Claude Code expands it at load time.)
+
+**7d. Write `.cursor/rules/wiki-instructions.mdc`** — Cursor adapter (always-on):
+
+Read `~/.claude/skills/pin-llm-wiki/templates/cursor-rules.mdc.tmpl`.
+Substitute `{{DOMAIN}}` → DOMAIN.
+Concatenate: the substituted frontmatter content + AGENTS_BODY.
+Write result to `.cursor/rules/wiki-instructions.mdc`.
 
 ### Step 8 — Git init (if GIT_INIT is true)
 
 Run in order:
 1. `git init`
-2. `git add .pin-llm-wiki.yml .gitignore inbox.md CLAUDE.md raw/ wiki/`
+2. `git add .pin-llm-wiki.yml .gitignore inbox.md AGENTS.md CLAUDE.md .cursor/ raw/ wiki/`
 3. `git commit -m "init: scaffold wiki for {{DOMAIN}}"`
    (substitute actual DOMAIN value in the commit message)
 
@@ -252,15 +269,19 @@ Print:
 ```
 Wiki scaffolded in <current directory>.
 
-  .pin-llm-wiki.yml   config (domain, detail level, source types)
-  inbox.md            drop URLs here under ## Pending
-  CLAUDE.md           agent instructions — do not delete
-  raw/                immutable source captures (written by fetch)
-  wiki/               knowledge base (written by ingest)
-    index.md          start here
-    overview.md       rolling synthesis
-    log.md            append-only history
+  .pin-llm-wiki.yml                       config (domain, detail level, source types)
+  inbox.md                                drop URLs here under ## Pending
+  AGENTS.md                               agent instructions — canonical (all tools)
+  CLAUDE.md                               agent instructions — Claude Code adapter
+  .cursor/rules/wiki-instructions.mdc     agent instructions — Cursor (always-on)
+  raw/                                    immutable source captures (written by fetch)
+  wiki/                                   knowledge base (written by ingest)
+    index.md                              start here
+    overview.md                           rolling synthesis
+    log.md                                append-only history
 
-Next: /pin-llm-wiki add <url>  (coming in the next phase)
-Until then, sources can be ingested manually following the workflow in CLAUDE.md.
+Next: /pin-llm-wiki add <url>
+
+Note: if you manually edit AGENTS.md, copy the updated body into
+.cursor/rules/wiki-instructions.mdc (preserve the frontmatter at the top).
 ```
