@@ -15,7 +15,13 @@
       "Bash(rm -rf /Users/nenaddjordjevic/.claude/skills/pin-llm-wiki)",
       "Bash(ln -s /Users/nenaddjordjevic/LLMProjects/pin-llm-wiki/skill /Users/nenaddjordjevic/.claude/skills/pin-llm-wiki)",
       "Bash(chmod +x *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "WebSearch",
+      "WebFetch(domain:docs.github.com)",
+      "WebFetch(domain:docs.cursor.com)",
+      "WebFetch(domain:agents.md)",
+      "WebFetch(domain:cursor.com)",
+      "WebFetch(domain:github.blog)"
     ]
   }
 }
