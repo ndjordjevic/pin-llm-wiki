@@ -33,7 +33,7 @@ The human's job shrinks to **drop URLs → review output**. Everything else is a
 
 1. **Citations first.** Every factual claim cites its raw file. No citation → no claim. Linter enforces.
 2. **Raw is immutable.** Never edited, never auto-deleted.
-3. **Inbox is human-owned.** Agent marks/moves `[x]`, never adds or removes URLs.
+3. **Inbox is human-led; the skill only mutates it in defined flows.** URLs enter `inbox.md` when the human edits it or when the user runs `/pin-llm-wiki add <url>` (append under `## Pending`, then ingest—§4.2). Ingest moves lines to `## Completed` and sets `[x]` per config. The agent does not add or drop inbox lines on its own initiative outside those subcommands.
 4. **Git is the versioning layer.** The wiki is a git repo. Rollback always possible.
 5. **The wiki is for both humans and agents.** Generated `CLAUDE.md` instructs future agents to read `wiki/index.md` first. Without that, the wiki is inert.
 
@@ -44,9 +44,10 @@ The human's job shrinks to **drop URLs → review output**. Everything else is a
 ### Phase 1 goals
 
 - `/pin-llm-wiki init` — conversational interview produces a working, scaffolded wiki repo.
-- `/pin-llm-wiki add <url>` — one-shot fetch + ingest for a single URL.
+- `/pin-llm-wiki add <url>` — append URL to `inbox.md` if absent, then one-shot fetch + ingest for that URL (§4.2).
 - `/pin-llm-wiki run` — batch process all pending inbox URLs.
-- `/pin-llm-wiki lint` — report-only lint pass.
+- `/pin-llm-wiki lint` — structured lint report plus §4.5 auto-fixes (index links, Check #4 topic stubs); no `--fix` flag.
+- `/pin-llm-wiki remove <slug>` — soft-delete a source (archive raw + wiki page by default), then lint for orphaned links/citations (§4.8).
 - Three source types supported at ship: `github`, `youtube`, `web`.
 - Three detail levels: `brief` / `standard` / `deep` (locked at init).
 - Zero hallucinations in the output — measured by manual citation spot-check on a test wiki.
@@ -100,11 +101,13 @@ A small team (≤5) sharing a domain-focused wiki via git — same repo, same sk
 **Behavior:** Conversational interview — one question at a time:
 
 1. **Domain:** "What is this wiki about?" (free text)
-2. **Detail level:** `brief` / `standard` / `deep` — show estimated token cost per typical source at each level; note detail is locked post-init.
+2. **Detail level:** `brief` / `standard` / `deep` — show estimated token cost per typical source at each level. This sets the **default** for the wiki and is locked post-init; per-source overrides via `<!-- detail:X -->` tag are still allowed (§4.3).
 3. **Source types:** multi-select from `[web, github, youtube]` (more types post-MVP).
 4. **Git:** initialize repo? (default yes.) Auto-commit each ingest? (default no — validated as the right default in manual pass; per-step human review beats surprise commits.)
 5. **Lint cadence:** `batch` (end of `run`) / `per-ingest` / `manual only`. Default `batch`.
 6. **Auto-mark inbox `[x]` after ingest:** default yes.
+
+**No budget / cost-cap interview:** `init` does not prompt for a token or dollar ceiling. The §4.3 per-source input-token guard is the only MVP cost control.
 
 **Generated artifacts:**
 
@@ -153,7 +156,7 @@ stale_threshold_days: 30    # configurable per §4.5 lint check
 2. Detect source type from URL (see §4.4).
 3. Fetch per type.
 4. Ingest (see §4.6).
-5. Move inbox line to `## Completed`, flip `[ ]` → `[x]`, append `<!-- ingested YYYY-MM-DD -->`.
+5. Move inbox line to `## Completed` and append `<!-- ingested YYYY-MM-DD -->`. If `auto_mark_complete: true` (default), also flip `[ ]` → `[x]`; otherwise the line moves but stays unchecked for human review.
 6. If `auto_commit: true`: `git commit -m "ingest: <slug>"`.
 7. No lint unless `auto_lint: per-ingest`.
 
@@ -163,10 +166,11 @@ stale_threshold_days: 30    # configurable per §4.5 lint check
 
 **Behavior:**
 1. Read `inbox.md`. For each unchecked line under `## Pending`:
-   - Honor tags (`<!-- skip -->`, `<!-- refresh -->`, `<!-- detail:X -->`, `<!-- branch:X -->`, `<!-- clone -->`).
-   - Detect type, fetch, ingest, move to `## Completed`.
-2. At the end: run `lint` once (if `auto_lint: batch`).
-3. If `auto_commit: true`: commit per-source (so diffs are reviewable).
+   - Honor tags (`<!-- skip -->`, `<!-- detail:X -->`, `<!-- branch:X -->`, `<!-- clone -->`).
+   - Detect type, fetch, ingest, move to `## Completed` (§4.2 step 5 semantics).
+2. Scan `## Completed` for lines carrying `<!-- refresh -->` (checked or unchecked) and run the refresh flow (§4.9) on each.
+3. At the end: run `lint` once (if `auto_lint: batch`).
+4. If `auto_commit: true`: commit per-source (so diffs are reviewable).
 
 **Idempotency:** if `run` crashes at source 4 of 7:
 - Sources 1–3 remain in `## Completed`.
@@ -201,8 +205,8 @@ stale_threshold_days: 30    # configurable per §4.5 lint check
 **YouTube fetch protocol** (validated):
 
 1. `yt-dlp --dump-json <url>` — description, chapters, title, channel, duration, upload date. One call.
-2. `yt-dlp --write-auto-sub --sub-format vtt --skip-download --sub-lang en-orig <url>` — transcript. Prefer `en-orig` over `en`.
-3. Parse VTT: rolling-caption format (each cue has 2 lines, last is live word-by-word). Take the first clean line per cue (no `<c>` tags), deduplicate consecutive duplicates, group by chapter heading (from `--dump-json`).
+2. Transcript: `yt-dlp --write-auto-sub --skip-download --sub-lang en-orig <url>`. Prefer `--sub-format srt` when available; fall back to `--sub-format vtt`. Prefer `en-orig` over `en`.
+3. Parse subtitles: for **SRT**, use standard cue text per block. For **VTT**, rolling-caption format (each cue has 2 lines, last is live word-by-word): take the first clean line per cue (no `<c>` tags), deduplicate consecutive duplicates, group by chapter heading (from `--dump-json`).
 4. Save to `raw/youtube/<video-id>-<slug>.md` with sections: metadata, description, chapter list, transcript grouped by chapter.
 5. Fallback: if no transcript track, flag inbox line `<!-- fetch-failed:no-transcript -->` and skip (do not mark `[x]`).
 
@@ -219,6 +223,8 @@ stale_threshold_days: 30    # configurable per §4.5 lint check
 6. Respect `robots.txt`; set user agent; rate-limit.
 7. Use `WebFetch` as default. Only fall back to Jina Reader (`r.jina.ai/<url>`) or headless browser if WebFetch returns a content-free skeleton on a specific site.
 
+**Raw layout by detail level (resolved):** At `brief` and `standard`, use the single-file raw paths in each protocol above (and §5.3). At `deep`, use per-page / tree layouts as specified (e.g. `raw/web/<domain>/<page-slug>.md`, optional full GitHub clone with `<!-- clone -->`); YouTube remains one markdown file per video.
+
 ### 4.5 Lint
 
 **Trigger:** `/pin-llm-wiki lint`, or end of `run` when `auto_lint: batch`.
@@ -227,7 +233,7 @@ stale_threshold_days: 30    # configurable per §4.5 lint check
 
 | # | Check | Severity |
 |---|---|---|
-| 1 | Citation coverage — every factual claim has a chain to a raw file | ERROR |
+| 1 | Citation coverage — every factual claim has a chain to a raw file; on `wiki/overview.md`, `[[source page]]` wikilinks count as the chain (see §5.4) | ERROR or WARN† |
 | 2 | Contradictions — conflicting claims across pages; rank by source authority | WARN |
 | 3 | Orphans — pages with no inbound `[[wikilinks]]`; **includes `overview.md` and `log.md`** | WARN |
 | 4 | Data gaps — concepts named in ≥2 source pages with no topic page | INFO (suggests topic creation) |
@@ -237,10 +243,14 @@ stale_threshold_days: 30    # configurable per §4.5 lint check
 | 8 | Frontmatter shape — source pages must NOT include `sources:`; topic/synthesis pages may | ERROR |
 | 9 | Citation path format — wiki-to-raw links must be relative-from-file (`../../raw/...` from `wiki/sources/`) | ERROR |
 
-**Output:** structured report (counts by severity, list of findings with file:line references). Report only — no auto-fix in MVP, with two exceptions:
+† **Check #1 severity:** **WARN** on `wiki/overview.md` only; **ERROR** on `wiki/sources/*`, `wiki/topics/*`, and other wiki pages.
 
-- **Auto-fixable:** missing `overview.md` / `log.md` links in `index.md` scaffold.
-- **Auto-fixable (stub only):** topic pages for concepts with ≥2-source coverage — generate scaffold with frontmatter + banner citations, leave body for human or next `add` to fill.
+**Output:** structured report (counts by severity, list of findings with file:line references). **Auto-fix on every lint** (no `--fix` flag; Phase 1 is always this behavior):
+
+- **Auto-fix:** missing `overview.md` / `log.md` links in `index.md` scaffold.
+- **Auto-fix (stub only):** topic pages for Check #4 (concepts with ≥2-source coverage) — generate scaffold with frontmatter + banner citations, leave body for human or next `add` to fill.
+
+All other checks are report-only.
 
 ### 4.6 Ingest
 
@@ -263,7 +273,7 @@ stale_threshold_days: 30    # configurable per §4.5 lint check
 5. Update `wiki/overview.md`: extend the current synthesis to reflect the new source. Overview cites `[[source pages]]`, not raw files.
 6. Append to `wiki/log.md`: `## [YYYY-MM-DD] ingest | <source> | <one-line summary>` followed by bullet list of files touched.
 7. Append row to `raw/<type>/README.md`.
-8. Move inbox line: `## Pending` → `## Completed`, `[ ]` → `[x]`, append `<!-- ingested YYYY-MM-DD -->`.
+8. Move inbox line: `## Pending` → `## Completed`, append `<!-- ingested YYYY-MM-DD -->`. If `auto_mark_complete: true` (default), also flip `[ ]` → `[x]`; otherwise leave unchecked.
 9. If `auto_commit: true`: `git commit -m "ingest: <slug>"`.
 
 **Merge rules (when updating an existing topic page, created by a prior lint run):**
@@ -285,7 +295,9 @@ Before answering any question about this wiki's domain, you MUST:
 4. If the answer is not in the wiki, say so clearly — do not infer from training data.
 ```
 
-Plus the full protocol for each source type the user selected (GitHub / YouTube / Web fetch protocols from §4.4, ingest workflow from §4.6, citation rules, frontmatter rules). The `agentic-ai-wiki/CLAUDE.md` at the end of the manual pass is the reference implementation.
+Plus the full protocol for each source type the user selected (GitHub / YouTube / Web fetch protocols from §4.4, ingest workflow from §4.6, citation rules, frontmatter rules). **Manual harvest (no `/harvest` command in MVP):** a short subsection describing how to promote a high-value agent answer into a `wiki/topics/` stub (or synthesis page): required frontmatter, banner citations to `[[source pages]]`, and when to run `lint`. Formal `/pin-llm-wiki harvest` stays deferred per §2 non-goals.
+
+The `agentic-ai-wiki/CLAUDE.md` at the end of the manual pass is the reference implementation.
 
 ### 4.8 Remove
 
@@ -296,11 +308,12 @@ Plus the full protocol for each source type the user selected (GitHub / YouTube 
 
 ### 4.9 Refresh
 
-Inbox tag: `- [x] https://... <!-- refresh -->`:
+Human adds the tag to a previously-ingested line under `## Completed` (typically `- [x] https://... <!-- refresh -->`). The refresh pass is driven by `run` step 2 (§4.3):
 1. Fetch agent re-fetches.
 2. Hash the cleaned raw content; compare to existing.
 3. If differs: update raw file, re-run ingest (wiki pages updated, not duplicated), append log entry `refresh: <slug>`.
 4. If identical: log `refresh: <slug> (no change)`, do nothing else.
+5. Remove `<!-- refresh -->` from the inbox line and append `<!-- refreshed YYYY-MM-DD -->` so the next `run` does not re-fetch. The `[x]` state is preserved.
 
 ---
 
@@ -316,16 +329,18 @@ Inbox tag: `- [x] https://... <!-- refresh -->`:
 
 **One ingest agent, branches by source type** (validated as simpler than the earlier FetchOrchestrator idea):
 
-- Main skill dispatches to subcommand handlers (init, add, run, lint, refresh, remove).
+- Main skill dispatches to subcommand handlers (`init`, `add`, `run`, `lint`, `remove`). Refresh is not a subcommand — it is a tag-driven flow inside `run` (§4.3 step 2, §4.9).
 - Each subcommand is a prose workflow in the skill, invoked in the Claude Code session (no subagents required for MVP).
 - Subagents (`Agent` tool, `subagent_type=Explore`) only when needed for large crawls or context pressure at deep detail.
+- **LLM backend:** Claude only for Phase 1 (skills in Claude Code). Multi-provider abstraction is Phase 2 CLI scope (§8).
 
 ### 5.3 Directory conventions (validated)
 
-- Raw: one compiled file per source at brief/standard.
+- Raw at **brief/standard:** one compiled file per source (per §4.4).
   - `raw/github/<org>-<repo>.md`
   - `raw/youtube/<video-id>-<slug>.md`
   - `raw/web/<domain>.md`
+- Raw at **deep:** `raw/web/<domain>/<page-slug>.md` per crawled page; GitHub may use a full clone tree under `raw/github/<org>-<repo>/` when `<!-- clone -->` is set; YouTube stays one markdown file per video.
 - Raw README per type: `raw/<type>/README.md` table with `File | Source | Fetched | Notes` (github adds `Stars`).
 - Wiki source pages: `wiki/sources/<slug>.md`.
 - Wiki topic pages: `wiki/topics/<slug>.md` (created at lint time).
@@ -335,7 +350,7 @@ Inbox tag: `- [x] https://... <!-- refresh -->`:
 
 - Source pages: no `sources:` frontmatter; banner citation from a single raw file; per-paragraph citations only when a second raw file is incorporated.
 - Topic pages: `sources:` lists contributing source pages as wikilinks; inline citations to raw files.
-- Synthesis / overview pages: cite `[[source pages]]`, not raw files directly.
+- Synthesis / overview pages: cite `[[source pages]]`, not raw files directly. **`overview.md` enforcement:** synthesis must be backed by `[[source page]]` wikilinks (Lint Check #1 — **WARN** on this file only).
 - Paths: always relative-from-file (`../../raw/...` from `wiki/sources/`).
 - Obsidian compatibility: list-form wikilinks (`- "[[page]]"`), not inline bracket arrays.
 
@@ -379,7 +394,7 @@ The MVP lint must catch:
 - Inbox line marked `[x]` but still under `## Pending`.
 - `overview.md` / `log.md` not linked from `index.md`.
 - Source page with no inbound wikilink (orphan).
-- Page with factual claim lacking citation chain.
+- Page with factual claim lacking citation chain (on `overview.md`, expect **WARN**-level from Check #1, not ERROR).
 
 ### 6.4 Agent-consumption test passes
 
@@ -400,17 +415,17 @@ Manual spot-check on 10 random factual claims across a 3-source test wiki: every
 
 ---
 
-## 7. Open questions deferred to implementation
+## 7. Resolved implementation decisions
 
-These don't block PRD sign-off but will need a decision during build:
+Audit trail; normative detail lives in the cited sections.
 
-1. **Lint auto-fix scope.** Should topic stub creation (Check #4 auto-fix) run automatically at lint time, or only when user passes `--fix`? Lean: `--fix` flag required.
-2. **Overview.md citation enforcement.** Currently overview has no citations; Check #1 allows `[[source page]]` wikilinks as citations. Should `overview.md` be required to have them? Lean: yes, but warning-level not error.
-3. **Deep-detail raw layout.** Flat compiled file vs per-page directory. Lean: per-page directory at deep, flat compiled file at brief/standard.
-4. **Harvest command.** `/pin-llm-wiki harvest` — formalize the "agent-consumption output → topic page" workflow in MVP or defer? Lean: defer; document the manual version in generated CLAUDE.md.
-5. **Cost-cap / budget guard.** Out of MVP scope per §2 non-goals, but should `init` prompt for a soft ceiling? Lean: no — 200k-per-source guard rail in §4.3 is enough for MVP.
-6. **Multi-LLM abstraction.** MVP is Claude-only (skills live in Claude Code). Abstraction layer deferred to Phase 2 CLI.
-7. **VTT vs SRT fallback.** SRT is cleaner than rolling-caption VTT. Should ingest prefer `--sub-format srt` when available? Lean: yes, with VTT fallback.
+1. **Lint auto-fix:** On every `lint` / end of `run` (when `auto_lint: batch`), apply §4.5 auto-fixes (index scaffold links + Check #4 topic stubs). No `--fix` flag.
+2. **`overview.md` citations:** Check #1 — `[[source page]]` wikilinks satisfy the citation chain; gaps on `wiki/overview.md` are **WARN**, elsewhere **ERROR** (§4.5, §5.4).
+3. **Raw layout by detail level:** `brief`/`standard` — single compiled raw files per §4.4 / §5.3; `deep` — per-page web tree, optional GitHub clone, one file per YouTube video (§4.4, §5.3).
+4. **Harvest:** No `/pin-llm-wiki harvest` subcommand in MVP (§2 non-goals). Generated `CLAUDE.md` documents **manual harvest** (§4.7).
+5. **`init` and budget:** No cost-cap or token-budget prompt in `init`; §4.3 per-source guard only (§4.1).
+6. **LLM backend:** Claude / Claude Code skills only for Phase 1; multi-provider abstraction deferred to Phase 2 CLI (§5.2, §8).
+7. **YouTube subtitles:** Prefer SRT via `yt-dlp` when available; VTT fallback and VTT-specific parsing when needed (§4.4).
 
 ---
 
