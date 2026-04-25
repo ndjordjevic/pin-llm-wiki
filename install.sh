@@ -22,10 +22,10 @@ case "${1:-}" in
     ;;
 esac
 
-echo "Installing $SKILL_NAME → $TARGET"
+echo "Installing $SKILL_NAME → $TARGET (symlink)"
 
 mkdir -p "$(dirname "$TARGET")"
 rm -rf "$TARGET"
-cp -r "$SKILL_DIR" "$TARGET"
+ln -sf "$SKILL_DIR" "$TARGET"
 
 echo "Done."
