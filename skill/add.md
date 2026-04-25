@@ -1,5 +1,7 @@
 # add — single-source ingest
 
+> **Skill directory note:** This file is in the skill directory (e.g. `<skill-dir>/`, `~/.claude/skills/pin-llm-wiki/`, `~/.copilot/skills/pin-llm-wiki/`, or `~/.cursor/skills/pin-llm-wiki/`). All `templates/` and sibling-file paths below are relative to that same directory. Use whichever path applies to the tool that loaded this skill.
+
 ## Guard
 
 Check whether `.pin-llm-wiki.yml` exists in the current working directory. If not, stop:
@@ -80,9 +82,9 @@ Derive slug and raw file path (except YouTube — finalized after fetch; see bel
 
 Read the protocol file for the detected type and follow it exactly:
 
-- **GitHub:** read `~/.claude/skills/pin-llm-wiki/templates/protocols/github.md`
-- **YouTube:** read `~/.claude/skills/pin-llm-wiki/templates/protocols/youtube.md`
-- **Web:** read `~/.claude/skills/pin-llm-wiki/templates/protocols/web.md`
+- **GitHub:** read `<skill-dir>/templates/protocols/github.md`
+- **YouTube:** read `<skill-dir>/templates/protocols/youtube.md`
+- **Web:** read `<skill-dir>/templates/protocols/web.md`
 
 Use the effective detail level throughout. Apply `<!-- branch:X -->` and `<!-- clone -->` tags (GitHub only).
 
@@ -96,7 +98,7 @@ Use the effective detail level throughout. Apply `<!-- branch:X -->` and `<!-- c
 
 ## Ingest
 
-Once the raw file is written, read `~/.claude/skills/pin-llm-wiki/ingest.md` and follow its instructions.
+Once the raw file is written, read `<skill-dir>/ingest.md` and follow its instructions.
 
 Carry this context into ingest:
 
@@ -114,7 +116,7 @@ Carry this context into ingest:
 
 ## Post-ingest
 
-- **`auto_lint: per-ingest`:** read `~/.claude/skills/pin-llm-wiki/lint.md` and run the full lint. Include the lint report in the output below.
+- **`auto_lint: per-ingest`:** read `<skill-dir>/lint.md` and run the full lint. Include the lint report in the output below.
 - Print confirmation:
 
 ```

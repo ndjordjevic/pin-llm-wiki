@@ -1,17 +1,21 @@
 # pin-llm-wiki
 
-A Claude Code skill that automates the [Karpathy LLM Wiki pattern](https://x.com/karpathy/status/1805977730336702875): drop a URL, get a citable, cross-referenced wiki page.
+A multi-editor skill that automates the [Karpathy LLM Wiki pattern](https://x.com/karpathy/status/1805977730336702875): drop a URL, get a citable, cross-referenced wiki page.
+
+**Where it runs:** [Claude Code](https://claude.com/product/claude-code) (slash commands), [GitHub Copilot](https://github.com/features/copilot) and [Cursor](https://cursor.com) (install the skill + follow the same workflows; see below).
 
 ## Install
 
 ```bash
-./install.sh           # installs to ~/.claude/skills/ as a symlink
-./install.sh project   # installs to .claude/skills/ in current directory
+./install.sh           # symlinks to ~/.claude/skills/, ~/.copilot/skills/, ~/.cursor/skills/
+./install.sh project   # symlinks to .claude/skills/, .copilot/skills/, .cursor/skills/ in cwd
+./install.sh /path/to   # one explicit parent dir (creates /path/to/pin-llm-wiki → skill)
 ```
 
 ## Usage
 
-All commands are run inside a Claude Code session.
+- **Claude Code:** use `/pin-llm-wiki` subcommands in the agent (`init`, `add`, `run`, `lint`, `remove`) — same as the skill’s `SKILL.md` dispatch table.
+- **Cursor / GitHub Copilot:** with this repo installed as a [Cursor skill](https://cursor.com/docs/context/skills) (see `~/.cursor/skills/` or `.cursor/skills/` from `./install.sh`) or a Copilot skill, the agent loads the same `SKILL.md`. In Cursor you can also type `/pin-llm-wiki` in Agent chat per Cursor’s skills UI. Alternatively, follow the step-by-step instructions in the generated `AGENTS.md` in your wiki. Each new wiki from `init` also gets `.cursor/rules/wiki-instructions.mdc` and `.github/copilot-instructions.md` so agents obey the pipeline even without a global skill install.
 
 ### Start a new wiki
 

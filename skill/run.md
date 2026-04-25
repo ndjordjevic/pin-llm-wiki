@@ -1,5 +1,7 @@
 # run — batch process pending inbox
 
+> **Skill directory note:** This file is in the skill directory (e.g. `<skill-dir>/`, `~/.claude/skills/pin-llm-wiki/`, `~/.copilot/skills/pin-llm-wiki/`, or `~/.cursor/skills/pin-llm-wiki/`). All `templates/` and sibling-file paths below are relative to that same directory. Use whichever path applies to the tool that loaded this skill.
+
 ## Guard
 
 Check whether `.pin-llm-wiki.yml` exists in the current working directory. If not, stop:
@@ -56,9 +58,9 @@ Same rules as `add`:
 ### 6. Fetch
 
 Read the protocol file for the detected type and follow it exactly:
-- GitHub → `~/.claude/skills/pin-llm-wiki/templates/protocols/github.md`
-- YouTube → `~/.claude/skills/pin-llm-wiki/templates/protocols/youtube.md`
-- Web → `~/.claude/skills/pin-llm-wiki/templates/protocols/web.md`
+- GitHub → `<skill-dir>/templates/protocols/github.md`
+- YouTube → `<skill-dir>/templates/protocols/youtube.md`
+- Web → `<skill-dir>/templates/protocols/web.md`
 
 Apply `<!-- branch:X -->` and `<!-- clone -->` tags (GitHub only). Use the effective detail level.
 
@@ -72,7 +74,7 @@ Apply `<!-- branch:X -->` and `<!-- clone -->` tags (GitHub only). Use the effec
 
 ### 7. Ingest
 
-Read `~/.claude/skills/pin-llm-wiki/ingest.md` and follow its instructions.
+Read `<skill-dir>/ingest.md` and follow its instructions.
 
 Pass this context:
 
@@ -161,7 +163,7 @@ Append `{pass: 2, url, slug, outcome: refreshed | no-change}` to run log.
 
 ## Post-run lint
 
-If `auto_lint: batch`: read `~/.claude/skills/pin-llm-wiki/lint.md` and run the full lint. Include the lint report in the run output below.
+If `auto_lint: batch`: read `<skill-dir>/lint.md` and run the full lint. Include the lint report in the run output below.
 
 If `auto_lint: never` or `per-ingest`: skip lint. Per-ingest lint is suppressed when running in batch mode — lint fires once at the end (`batch`) or not at all (`never`). It never fires per-item inside `run`.
 
