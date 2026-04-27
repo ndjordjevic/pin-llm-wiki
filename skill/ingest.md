@@ -11,7 +11,6 @@ Called by `add`, `run`, and `refresh`. Execute steps in order.
 | `raw_file_path` | path to the completed raw file (e.g. `raw/github/langchain-ai-langchain.md`) |
 | `effective_detail_level` | resolved detail level (`brief` / `standard` / `deep`) |
 | `auto_mark_complete` | from `.pin-llm-wiki.yml` |
-| `auto_commit` | from `.pin-llm-wiki.yml` |
 | `today` | current date `YYYY-MM-DD` |
 
 ---
@@ -133,9 +132,6 @@ Write the updated file.
 
 ---
 
-## Step 9 — Git commit (if `auto_commit: true`)
+## Step 9 — Git (no agent commits)
 
-```
-git add wiki/sources/<slug>.md wiki/index.md wiki/overview.md wiki/log.md raw/<type>/README.md <raw_file_path> inbox.md
-git commit -m "ingest: <slug>"
-```
+Do not run `git commit` or `git push` after ingest—see the wiki’s `AGENTS.md` **Git — never auto-commit**.

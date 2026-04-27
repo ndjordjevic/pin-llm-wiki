@@ -10,7 +10,7 @@ Check whether `.pin-llm-wiki.yml` exists in the current working directory. If no
 ## Setup
 
 **Read config:**
-Read `.pin-llm-wiki.yml` and extract: `domain`, `stale_threshold_days`, `auto_commit`.
+Read `.pin-llm-wiki.yml` and extract: `domain`, `stale_threshold_days`.
 
 **Discover wiki files:**
 
@@ -230,10 +230,6 @@ If there are no findings at all and no auto-fixes: print `All checks passed.`
 
 ---
 
-## Git commit (if `auto_commit: true`)
+## Git (no agent commits)
 
-If any auto-fixes were applied and `auto_commit: true`:
-```
-git add wiki/index.md wiki/topics/<new-stubs...>
-git commit -m "lint: auto-fix — <summary of fixes applied>"
-```
+Do not run `git commit` or `git push` after lint, even if auto-fixes were applied—see the wiki’s `AGENTS.md` **Git — never auto-commit**.

@@ -16,6 +16,7 @@ A multi-editor skill that automates the [Karpathy LLM Wiki pattern](https://x.co
 
 - **Claude Code:** use `/pin-llm-wiki` subcommands in the agent (`init`, `add`, `run`, `lint`, `remove`) — same as the skill’s `SKILL.md` dispatch table.
 - **Cursor / GitHub Copilot:** with this repo installed as a [Cursor skill](https://cursor.com/docs/context/skills) (see `~/.cursor/skills/` or `.cursor/skills/` from `./install.sh`) or a Copilot skill, the agent loads the same `SKILL.md`. In Cursor you can also type `/pin-llm-wiki` in Agent chat per Cursor’s skills UI. Alternatively, follow the step-by-step instructions in the generated `AGENTS.md` in your wiki. Each new wiki from `init` also gets `.cursor/rules/wiki-instructions.mdc` and `.github/copilot-instructions.md` so agents obey the pipeline even without a global skill install.
+- **Git:** generated wikis instruct **all** agents not to run `git commit` / `git push` after ingests, lint, or other workflow steps unless you explicitly ask in chat—the human reviews diffs and commits.
 
 ### Start a new wiki
 

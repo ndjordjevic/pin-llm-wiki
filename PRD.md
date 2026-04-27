@@ -103,7 +103,7 @@ A small team (≤5) sharing a domain-focused wiki via git — same repo, same sk
 1. **Domain:** "What is this wiki about?" (free text)
 2. **Detail level:** `brief` / `standard` / `deep` — show estimated token cost per typical source at each level. This sets the **default** for the wiki and is locked post-init; per-source overrides via `<!-- detail:X -->` tag are still allowed (§4.3).
 3. **Source types:** multi-select from `[web, github, youtube]` (more types post-MVP).
-4. **Git:** initialize repo? (default yes.) Auto-commit each ingest? (default no — validated as the right default in manual pass; per-step human review beats surprise commits.)
+4. **Git:** initialize repo? (default yes.)
 5. **Lint cadence:** `batch` (end of `run`) / `per-ingest` / `manual only`. Default `batch`.
 6. **Auto-mark inbox `[x]` after ingest:** default yes.
 
@@ -141,7 +141,6 @@ created: 2026-04-23
 domain: "..."
 detail_level: brief | standard | deep
 source_types: [web, github, youtube]
-auto_commit: false
 auto_lint: batch            # never | batch | per-ingest
 auto_mark_complete: true
 stale_threshold_days: 30    # configurable per §4.5 lint check
@@ -157,7 +156,7 @@ stale_threshold_days: 30    # configurable per §4.5 lint check
 3. Fetch per type.
 4. Ingest (see §4.6).
 5. Move inbox line to `## Completed` and append `<!-- ingested YYYY-MM-DD -->`. If `auto_mark_complete: true` (default), also flip `[ ]` → `[x]`; otherwise the line moves but stays unchecked for human review.
-6. If `auto_commit: true`: `git commit -m "ingest: <slug>"`.
+6. **Agents do not run `git commit`.** The human reviews and commits.
 7. No lint unless `auto_lint: per-ingest`.
 
 ### 4.3 `run` — batch process pending inbox
@@ -170,7 +169,7 @@ stale_threshold_days: 30    # configurable per §4.5 lint check
    - Detect type, fetch, ingest, move to `## Completed` (§4.2 step 5 semantics).
 2. Scan `## Completed` for lines carrying `<!-- refresh -->` (checked or unchecked) and run the refresh flow (§4.9) on each.
 3. At the end: run `lint` once (if `auto_lint: batch`).
-4. If `auto_commit: true`: commit per-source (so diffs are reviewable).
+4. **Agents do not run `git commit` during `run`.** The human reviews and commits.
 
 **Idempotency:** if `run` crashes at source 4 of 7:
 - Sources 1–3 remain in `## Completed`.
@@ -274,7 +273,7 @@ All other checks are report-only.
 6. Append to `wiki/log.md`: `## [YYYY-MM-DD] ingest | <source> | <one-line summary>` followed by bullet list of files touched.
 7. Append row to `raw/<type>/README.md`.
 8. Move inbox line: `## Pending` → `## Completed`, append `<!-- ingested YYYY-MM-DD -->`. If `auto_mark_complete: true` (default), also flip `[ ]` → `[x]`; otherwise leave unchecked.
-9. If `auto_commit: true`: `git commit -m "ingest: <slug>"`.
+9. **No agent `git commit`** — see generated `AGENTS.md` **Git — never auto-commit**.
 
 **Merge rules (when updating an existing topic page, created by a prior lint run):**
 

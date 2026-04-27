@@ -11,7 +11,7 @@ Check whether `.pin-llm-wiki.yml` exists in the current working directory. If no
 
 ## Setup
 
-Read `.pin-llm-wiki.yml` and extract: `domain`, `detail_level`, `source_types`, `auto_commit`, `auto_mark_complete`, `auto_lint`.
+Read `.pin-llm-wiki.yml` and extract: `domain`, `detail_level`, `source_types`, `auto_mark_complete`, `auto_lint`.
 
 Set `today` = current date in `YYYY-MM-DD` format.
 
@@ -85,10 +85,9 @@ Pass this context:
 | `raw_file_path` | derived above |
 | `effective_detail_level` | override or config default |
 | `auto_mark_complete` | from config |
-| `auto_commit` | from config |
 | `today` | current date |
 
-Ingest step 9 handles the git commit for this source when `auto_commit: true` — do not commit again.
+Ingest step 9 is a no-op for git—do not run `git commit` for ingest (see the wiki’s `AGENTS.md` **Git — never auto-commit**).
 
 Append `{pass: 1, url, slug, outcome: ingested}` to run log.
 
@@ -138,24 +137,13 @@ Strip from both the old and new content any frontmatter fields whose value is a 
   ```
 - Proceed to step 5.
 
-### 5. Update inbox line and commit
+### 5. Update inbox line
 
 - Remove `<!-- refresh -->` from the line.
 - Append `<!-- refreshed <today> -->`.
 - Preserve the existing `[ ]` / `[x]` state.
 - Write the updated `inbox.md`.
-
-If `auto_commit: true`:
-- **Content changed:**
-  ```
-  git add raw/<type>/README.md raw/<type>/<slug-file>.md wiki/sources/<slug>.md wiki/index.md wiki/overview.md wiki/log.md inbox.md
-  git commit -m "refresh: <slug>"
-  ```
-- **No change:** (inbox tag swap only)
-  ```
-  git add inbox.md
-  git commit -m "refresh: <slug> (no change — tag removed)"
-  ```
+- **Do not** run `git commit` or `git push` (see the wiki’s `AGENTS.md` **Git — never auto-commit**).
 
 Append `{pass: 2, url, slug, outcome: refreshed | no-change}` to run log.
 
@@ -195,6 +183,6 @@ Pass 2 — refresh:
 ## Notes
 
 - **Idempotency:** items remain under `## Pending` until successfully ingested. A crashed run can be safely re-run — it picks up from the first item still under `## Pending`.
-- **Per-source commits:** when `auto_commit: true`, ingest step 9 commits after each source so each source is a separate reviewable diff.
+- **No agent commits:** ingest and refresh never run `git commit`—the human commits after review.
 - **`<!-- skip -->` is persistent:** the tag remains on the line and `run` skips it on every subsequent invocation. Remove the tag manually to process the item.
 - **Partial raw content on crash:** if a run crashes mid-fetch, the partial raw file (if any) will be overwritten on the next run's re-fetch — no manual cleanup needed.

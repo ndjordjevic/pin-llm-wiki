@@ -9,7 +9,7 @@ Check whether `.pin-llm-wiki.yml` exists in the current working directory. If no
 
 ## Setup
 
-Read `.pin-llm-wiki.yml` and extract: `domain`, `auto_commit`.
+Read `.pin-llm-wiki.yml` and extract: `domain`.
 
 Set `today` = current date in `YYYY-MM-DD` format.
 
@@ -107,14 +107,9 @@ Collect all matches as `{file, line, match}` and present them in the report belo
 
 ---
 
-## Step 9 — Git commit (if `auto_commit: true`)
+## Step 9 — Git (no agent commits)
 
-```
-git add -A wiki/ raw/
-git commit -m "remove: <slug>"
-```
-
-Using `git add -A` captures both the deleted paths (wiki/sources, raw/) and the updated files (index.md, overview.md, log.md, .archive/).
+Do not run `git commit` or `git push` after remove—see the wiki’s `AGENTS.md` **Git — never auto-commit**.
 
 ---
 
@@ -126,7 +121,7 @@ Removed: <slug>
   Archived:    wiki/sources/<slug>.md → wiki/.archive/sources/<slug>.md
                raw/<type>/<slug-file(s)> → wiki/.archive/raw/<type>/
   Updated:     wiki/index.md (-1 source), wiki/overview.md, wiki/log.md
-  [Committed:  "remove: <slug>"]   ← if auto_commit: true
+  (Do not commit; human commits when ready.)
 
 Dangling references found (<N>):
   <file>:<line>  <match>

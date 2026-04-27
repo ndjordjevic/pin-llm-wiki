@@ -12,7 +12,7 @@ Check whether `.pin-llm-wiki.yml` exists in the current working directory. If no
 ## Setup
 
 **Read config:**
-Read `.pin-llm-wiki.yml` and extract: `detail_level`, `source_types`, `auto_commit`, `auto_mark_complete`, `auto_lint`.
+Read `.pin-llm-wiki.yml` and extract: `detail_level`, `source_types`, `auto_mark_complete`, `auto_lint`.
 
 **Parse the URL:**
 The URL is the first argument after `/pin-llm-wiki add`. Also capture any inline tags that follow the URL in the invocation: `<!-- detail:X -->`, `<!-- branch:X -->`, `<!-- clone -->`.
@@ -109,7 +109,6 @@ Carry this context into ingest:
 | `raw_file_path` | path computed above |
 | `effective_detail_level` | tag override or config default |
 | `auto_mark_complete` | from config |
-| `auto_commit` | from config |
 | `today` | current date `YYYY-MM-DD` |
 
 ---
@@ -131,5 +130,6 @@ Ingested: <url>
 Updated: wiki/index.md, wiki/overview.md, wiki/log.md, raw/<type>/README.md, inbox.md
 ```
 
-If `auto_commit: true`, append: `  Committed: "ingest: <slug>"`
 If the detected type was not in `source_types`, append: `  Note: source type <type> is not in this wiki's source_types config.`
+
+Do not run `git commit`—see the wiki’s `AGENTS.md` **Git — never auto-commit** (suggested message for the human: `ingest: <slug>`).

@@ -242,7 +242,6 @@ created: 2026-04-21
 domain: "Agentic GenAI learning journey"
 detail_level: standard
 source_types: [web, github, youtube]
-auto_commit: true
 auto_lint: batch  # never | batch | per-ingest
 auto_mark_complete: true
 ```
@@ -374,7 +373,7 @@ When a fresh agent session produces a synthesis insight better than what's in th
 1. **What is this wiki about?** (free text, domain description)
 2. **Detail level?** `brief / standard / deep` — shows estimated cost per typical source
 3. **Which source types will you use?** (multi-select: web, github, youtube — more can be added later)
-4. **Git:** initialize repo now? (default: yes). Auto-commit each ingest? (default: yes)
+4. **Git:** initialize repo now? (default: yes)
 5. **Lint cadence:** `batch` (end of run) / `per-ingest` / `manual only`
 6. **Auto-mark inbox `[x]` after ingest?** (default: yes)
 7. **Privacy:** any domains to allowlist or blocklist for scraping?

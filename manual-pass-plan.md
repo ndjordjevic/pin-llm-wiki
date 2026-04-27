@@ -224,7 +224,7 @@ Keep `manual-pass-findings.md` structured as:
 - Refresh / remove workflows.
 - `arxiv`, `blogs`, `threads` source types.
 - Cost guard / budget enforcement.
-- Auto-commit per ingest (we commit manually after each step to get clean diffs).
+- Automated `git commit` from the agent or skill (we commit manually after each step to get clean diffs).
 - Playwright / headless browser integration (evaluated only if WebFetch + Jina both fail).
 
 ---

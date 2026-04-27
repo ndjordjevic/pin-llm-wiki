@@ -19,6 +19,14 @@ This wiki is the authoritative source for this domain. Training-data knowledge a
 
 ---
 
+## Git — never auto-commit
+
+**Do not** run `git commit` or `git push` after ingest, refresh, `run`, `lint`, `remove`, initial wiki scaffold, or any other file change in this repo—**unless the human explicitly asked you to commit or push in this conversation.**
+
+When work is done, list what changed and stop; the human reviews diffs and runs `git commit` / `git push` when ready.
+
+---
+
 ## Wiki structure
 
 ```
@@ -106,8 +114,8 @@ Update the `updated:` date. Write the file. This page cites `[[source page slugs
 Move the URL from `## Pending` to `## Completed`. Append `<!-- ingested YYYY-MM-DD -->`.
 If `auto_mark_complete: {{AUTO_MARK_COMPLETE}}`, also flip `[ ]` → `[x]`.
 
-**Step 9 — Git commit (if `auto_commit: {{AUTO_COMMIT}}`).**
-`git commit -m "ingest: <slug>"`
+**Step 9 — Git (no agent commits)**  
+Skip. Do not run `git commit` for this ingest. See **Git — never auto-commit** above.
 
 ### Merge rules (updating an existing topic page)
 
@@ -181,7 +189,7 @@ The run command scans `## Completed` for `<!-- refresh -->` and:
 1. Re-fetches the source using the same protocol.
 2. Strips any frontmatter field whose value matches `YYYY-MM-DD` or an ISO 8601 timestamp pattern from both copies before comparing. If unchanged, logs `refresh: <slug> (no change)` and stops.
 3. If changed: overwrites the raw file, re-runs ingest steps 2–5 and 7 (updates wiki pages; skips step 6 log, inbox-move, and commit), appends a log entry `refresh: <slug> | content updated`.
-4. Removes `<!-- refresh -->` from the inbox line, appends `<!-- refreshed YYYY-MM-DD -->`, preserves `[ ]`/`[x]` state. If `auto_commit: true`: commits.
+4. Removes `<!-- refresh -->` from the inbox line, appends `<!-- refreshed YYYY-MM-DD -->`, preserves `[ ]`/`[x]` state. Do not run `git commit` (see **Git — never auto-commit**).
 
 ---
 

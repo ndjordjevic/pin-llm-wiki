@@ -64,13 +64,6 @@ Ask:
 
 Default: yes. Store as `GIT_INIT` (true/false).
 
-If `GIT_INIT` is true, ask a follow-up:
-> "Auto-commit after each ingest? (yes/no, default: no) — no means you review diffs before committing."
-
-Default: no. Store as `AUTO_COMMIT` (true/false).
-
-If `GIT_INIT` is false, set `AUTO_COMMIT = false`.
-
 ---
 
 **Question 5 — Lint cadence**
@@ -104,7 +97,7 @@ Print a summary:
 Domain:         <DOMAIN>
 Detail level:   <DETAIL_LEVEL>
 Source types:   <SOURCE_TYPES joined by ", ">
-Git init:       <GIT_INIT>  (auto-commit: <AUTO_COMMIT>)
+Git init:       <GIT_INIT>
 Lint cadence:   <AUTO_LINT>
 Auto-mark [x]:  <AUTO_MARK_COMPLETE>
 ```
@@ -127,7 +120,6 @@ Substitute:
 - `{{DOMAIN}}` → DOMAIN
 - `{{DETAIL_LEVEL}}` → DETAIL_LEVEL
 - `{{SOURCE_TYPES_LIST}}` → YAML list of selected types, e.g. `[web, github, youtube]`
-- `{{AUTO_COMMIT}}` → AUTO_COMMIT as lowercase string (`true` or `false`)
 - `{{AUTO_LINT}}` → AUTO_LINT
 - `{{AUTO_MARK_COMPLETE}}` → AUTO_MARK_COMPLETE as lowercase string
 - `{{CREATED_DATE}}` → today's date in YYYY-MM-DD format
@@ -227,7 +219,6 @@ Substitute:
 - `{{DOMAIN}}` → DOMAIN
 - `{{DETAIL_LEVEL}}` → DETAIL_LEVEL
 - `{{CREATED_DATE}}` → today's date
-- `{{AUTO_COMMIT}}` → AUTO_COMMIT as lowercase string
 - `{{AUTO_MARK_COMPLETE}}` → AUTO_MARK_COMPLETE as lowercase string
 
 Build the source protocol block to substitute for `{{SOURCE_PROTOCOLS}}`:
@@ -264,11 +255,7 @@ Write AGENTS_BODY to `.github/copilot-instructions.md`.
 
 ### Step 8 — Git init (if GIT_INIT is true)
 
-Run in order:
-1. `git init`
-2. `git add .pin-llm-wiki.yml .gitignore inbox.md AGENTS.md CLAUDE.md .cursor/ .github/ raw/ wiki/`
-3. `git commit -m "init: scaffold wiki for {{DOMAIN}}"`
-   (substitute actual DOMAIN value in the commit message)
+Run `git init` only. **Do not** run `git add` or `git commit` for the scaffold—the human reviews file changes and commits when ready (same policy as `AGENTS.md` **Git — never auto-commit**).
 
 ### Step 9 — Confirmation
 
