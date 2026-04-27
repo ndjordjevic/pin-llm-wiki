@@ -208,6 +208,12 @@ Create empty placeholder files to preserve empty directories in git:
 - `wiki/syntheses/.gitkeep`
 - `wiki/.archive/.gitkeep`
 
+### Step 6a — Wiki README
+
+Read `<skill-dir>/templates/README.md.tmpl`.
+Substitute `{{DOMAIN}}` → DOMAIN.
+Write result to `README.md`.
+
 ### Step 7 — Agent instruction files
 
 Several files are written from the same **AGENTS_BODY** so that Claude Code, GitHub Copilot, and Cursor all behave identically in this wiki (`AGENTS.md` plus one adapter file per tool below).
@@ -265,6 +271,7 @@ Print:
 Wiki scaffolded in <current directory>.
 
   .pin-llm-wiki.yml                           config (domain, detail level, source types)
+  README.md                                   human-facing usage guide for this wiki
   inbox.md                                    drop URLs here under ## Pending
   AGENTS.md                                   agent instructions — canonical (all tools)
   CLAUDE.md                                   agent instructions — Claude Code adapter
