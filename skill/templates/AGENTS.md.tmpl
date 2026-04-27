@@ -15,7 +15,7 @@ Before answering **any question** about {{DOMAIN}}, you MUST:
 
 This wiki is the authoritative source for this domain. Training-data knowledge about {{DOMAIN}} is noise here; the wiki is signal.
 
-> **Phase 1 note:** In Claude Code, use the `/pin-llm-wiki` subcommands (`init`, `add`, `run`, `lint`, `remove`) to automate this workflow. In **Cursor** (pin-llm-wiki installed as a [Cursor skill](https://cursor.com/docs/context/skills) under `~/.cursor/skills/pin-llm-wiki` or `.cursor/skills/pin-llm-wiki`), the same `SKILL.md` applies — use `/pin-llm-wiki` in Agent chat or follow the workflow steps below. In **GitHub Copilot** and other tools without the skill, follow the workflow steps below directly — they are fully self-contained.
+> **Phase 1 note:** In Claude Code, use the `/pin-llm-wiki` subcommands (`init`, `add`, `run`, `lint`, `remove`, `queue`) to automate this workflow. In **Cursor** (pin-llm-wiki installed as a [Cursor skill](https://cursor.com/docs/context/skills) under `~/.cursor/skills/pin-llm-wiki` or `.cursor/skills/pin-llm-wiki`), the same `SKILL.md` applies — use `/pin-llm-wiki` in Agent chat or follow the workflow steps below. In **GitHub Copilot** and other tools without the skill, follow the workflow steps below directly — they are fully self-contained.
 
 ---
 
@@ -46,7 +46,7 @@ raw/
   [web/]            ← immutable web page/site captures
   assets/           ← downloaded media/binaries
 
-inbox.md            ← human-owned; agent only touches it within defined workflows
+inbox.md            ← agents may add to ## Pending via `queue`; all other edits are human-driven
 .pin-llm-wiki.yml   ← config (detail level, source types, lint cadence, etc.)
 ```
 
@@ -258,6 +258,28 @@ When a cross-source answer is worth keeping permanently, promote it to a topic o
 Do not auto-generate topic body content. The stub names the concept and links it; fill body when you have adequate sources.
 
 A formal `/pin-llm-wiki harvest` command is deferred. This manual flow is the MVP path.
+
+---
+
+## Queue workflow
+
+Agents (human-directed or autonomous) may suggest URLs for later ingest without immediately fetching them.
+
+`/pin-llm-wiki queue <url> [<url> ...]` — adds one or more URLs to `inbox.md`'s `## Pending` section and stops. No fetch, no ingest, no wiki pages touched. The human reviews the list and triggers ingest when ready via `/pin-llm-wiki run` or `/pin-llm-wiki add <url>`.
+
+**When to use `queue` vs `add`:**
+- **`queue`**: you discovered a potentially relevant source mid-task and want to surface it for human review without interrupting the current flow.
+- **`add`**: you have been explicitly asked to ingest a specific source right now.
+
+**Rules:**
+- `queue` is the **only** inbox mutation an agent may perform outside of the `add`, `run`, and `remove` workflows.
+- Supported inline tags (appended after the URL, same syntax as the inbox header):
+  - `<!-- detail:brief|standard|deep -->` — override detail level for this source
+  - `<!-- branch:X -->` — GitHub: use this branch instead of default
+  - `<!-- clone -->` — GitHub deep: full git clone
+  - `<!-- skip -->` — queue the URL but skip it on the next `run`
+  - `<!-- note: <text> -->` — freeform rationale visible to the human reviewer (ignored by all other subcommands)
+- Never run `git commit` after `queue` — see **Git — never auto-commit**.
 
 ---
 

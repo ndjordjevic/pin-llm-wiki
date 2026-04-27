@@ -27,6 +27,7 @@ a healthy, queryable knowledge base
 | `run` | implemented |
 | `lint` | implemented |
 | `remove <slug>` | implemented |
+| `queue <url> [<url> ...]` | implemented |
 
 ## Dispatch
 
@@ -39,4 +40,5 @@ This SKILL.md lives inside the skill directory (e.g. `~/.claude/skills/pin-llm-w
    - **`lint`** → `lint.md`
    - **`run`** → `run.md`
    - **`remove`** → `remove.md`
+   - **`queue`** → `queue.md`
 3. Do not proceed beyond this dispatch step before reading the target file.

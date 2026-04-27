@@ -1,6 +1,6 @@
 # Inbox
 
-Drop URLs below under `## Pending`. Run `/pin-llm-wiki add <url>` for single-URL ingest, or edit this file and run `/pin-llm-wiki run` to batch-process all pending items.
+Drop URLs below under `## Pending`. Run `/pin-llm-wiki add <url>` for single-URL ingest, or edit this file and run `/pin-llm-wiki run` to batch-process all pending items. Agents may use `/pin-llm-wiki queue <url>` to suggest URLs without immediately ingesting them.
 
 ## Pending
 
