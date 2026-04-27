@@ -2,6 +2,22 @@
 
 > **Skill directory note:** This file is in the skill directory (e.g. `<skill-dir>/`, `~/.claude/skills/pin-llm-wiki/`, `~/.copilot/skills/pin-llm-wiki/`, or `~/.cursor/skills/pin-llm-wiki/`). All `templates/` and sibling-file paths below are relative to that same directory. Use whichever path applies to the tool that loaded this skill.
 
+## Invocation forms
+
+```
+/pin-llm-wiki run              ← batch: process all pending items
+/pin-llm-wiki run <url>        ← single: process only this URL from Pending
+```
+
+When a `<url>` argument is supplied, `run` operates in **single-URL mode**: only the inbox line whose URL exactly matches `<url>` is processed. Pass 1 processes only that one line; Pass 2 (refresh) runs normally (all `<!-- refresh -->` lines in Completed). All other behavior — fetch, ingest, lint, summary report — is identical.
+
+**Single-URL error cases** (stop immediately, do not proceed):
+- URL not found under `## Pending` → "URL not found in Pending: `<url>`. Add it with `/pin-llm-wiki queue <url>` first."
+- URL found under `## Pending` but has `<!-- skip -->` tag → "URL is marked `<!-- skip -->` — remove the tag from `inbox.md` to process it."
+- URL found under `## Completed` (already ingested) → "URL already completed. To re-fetch, add `<!-- refresh -->` to its inbox line and run `/pin-llm-wiki run` again."
+
+---
+
 ## Guard
 
 Check whether `.pin-llm-wiki.yml` exists in the current working directory. If not, stop:
@@ -22,6 +38,8 @@ Initialize a **run log** (empty list): `{pass, url, slug, outcome}` entries appe
 ## Pass 1 — Process pending items
 
 Read `inbox.md`. Collect all lines matching `- [ ] ...` under `## Pending`, in order top-to-bottom.
+
+**In single-URL mode:** filter the collected lines to only the one line whose URL matches the `<url>` argument. If after filtering the list is empty, the error-case checks above already fired — this point is not reached.
 
 For each such line:
 

@@ -14,7 +14,7 @@ A multi-editor skill that automates the [Karpathy LLM Wiki pattern](https://x.co
 
 ## Usage
 
-- **Claude Code:** use `/pin-llm-wiki` subcommands in the agent (`init`, `add`, `run`, `lint`, `remove`, `queue`) — same as the skill’s `SKILL.md` dispatch table.
+- **Claude Code:** use `/pin-llm-wiki` subcommands in the agent (`init`, `add`, `run [<url>]`, `lint`, `remove`, `queue`) — same as the skill’s `SKILL.md` dispatch table.
 - **Cursor / GitHub Copilot:** with this repo installed as a [Cursor skill](https://cursor.com/docs/context/skills) (see `~/.cursor/skills/` or `.cursor/skills/` from `./install.sh`) or a Copilot skill, the agent loads the same `SKILL.md`. In Cursor you can also type `/pin-llm-wiki` in Agent chat per Cursor’s skills UI. Alternatively, follow the step-by-step instructions in the generated `AGENTS.md` in your wiki. Each new wiki from `init` also gets `.cursor/rules/wiki-instructions.mdc` and `.github/copilot-instructions.md` so agents obey the pipeline even without a global skill install.
 - **Git:** generated wikis instruct **all** agents not to run `git commit` / `git push` after ingests, lint, or other workflow steps unless you explicitly ask in chat—the human reviews diffs and commits.
 
@@ -34,15 +34,16 @@ Runs a short interview (domain, detail level, source types, git settings), then 
 
 Fetches, ingests, and writes `wiki/sources/<slug>.md`. Updates index, overview, log, and inbox in one shot.
 
-### Process all pending inbox items
+### Process pending inbox items
 
 Edit `inbox.md` → add URLs under `## Pending` → then:
 
 ```
-/pin-llm-wiki run
+/pin-llm-wiki run              # process all pending items
+/pin-llm-wiki run <url>        # process only this one URL from Pending
 ```
 
-Ingests each pending URL in order, moves completed lines to `## Completed`.
+Ingests each pending URL in order, moves completed lines to `## Completed`. The single-URL form is useful when you want to ingest one specific source without touching the rest of the queue.
 
 ### Inline inbox tags
 

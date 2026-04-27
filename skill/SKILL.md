@@ -24,7 +24,7 @@ a healthy, queryable knowledge base
 |---|---|
 | `init` | implemented |
 | `add <url>` | implemented |
-| `run` | implemented |
+| `run [<url>]` | implemented |
 | `lint` | implemented |
 | `remove <slug>` | implemented |
 | `queue <url> [<url> ...]` | implemented |
