@@ -67,9 +67,10 @@ Frontmatter:
 ```yaml
 ---
 type: source
+source_url: <original URL of the source — GitHub repo URL, website URL, YouTube video URL>
 tags: []
 related: []
-product: null
+product: <product-slug>
 detail_level: {{DETAIL_LEVEL}}
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
@@ -78,7 +79,8 @@ updated: YYYY-MM-DD
 
 Rules:
 - **MUST NOT include a `sources:` field.** Source pages do not cite themselves.
-- `product:` groups sources for the same product (marketing site + own GitHub repo, etc.). Resolved in Step 2b. Default `null`.
+- `source_url:` is the canonical URL of the source (e.g. `https://github.com/org/repo`, `https://example.com`, `https://youtube.com/watch?v=ID`). Always populated.
+- `product:` is a short kebab-case identifier for the product or project this source describes. Derive from the repo/site name — strip the author prefix from GitHub slugs (e.g. `obra-superpowers` → `superpowers`, `coleam00-claude-memory-compiler` → `claude-memory-compiler`, `gsd-build-get-shit-done` → `gsd`). For web sources, use the domain (strip `.com`/`.io`/etc, e.g. `runcabinet.com` → `cabinet`). Sources describing the same product share the same `product:` slug. Resolved in Step 2b. Always populated — never `null`.
 - First line of body: summary paragraph (what this source is and why it matters).
 - Second line: banner citation — `_All claims below are sourced from ../../raw/<type>/<file>.md unless otherwise noted._`
 - Then: sectioned body. Per-type structure (canonical sections, in this order; extra top-level sections allowed only for genuinely substantial subsystems — fold incidental content into a listed section):
@@ -94,11 +96,11 @@ Rules:
 - Add per-paragraph citations only when a **second** raw file contributes to this page; otherwise the banner covers it.
 
 **Step 2b — Detect product grouping.**
-After writing the source page, scan existing `wiki/sources/*.md` and resolve a `product:` value:
-- **GitHub source:** read `homepageUrl` from the raw `## Metadata` block. Extract its hostname (strip `www.`). If any existing **web** source page slug matches that hostname, set `product:` on both pages to that hostname.
-- **Web source:** scan the raw file body for a `github.com/<org>/<repo>` URL in the first ~500 chars or in title/hero. If `<org>-<repo>` matches an existing **github** source slug, set `product:` on both pages to the web source's slug (the domain).
-- **YouTube:** never auto-grouped.
-- **No match:** leave `product: null`. Humans may set `product:` manually for cases the heuristic misses.
+After writing the source page, scan existing `wiki/sources/*.md` and resolve `product:`:
+- **GitHub source:** read `homepageUrl` from the raw `## Metadata` block. Extract its hostname (strip `www.`). If any existing **web** source page has a slug equal to that hostname, set `product:` on both pages to that hostname. Otherwise derive from the slug: strip the author prefix (e.g. `obra-superpowers` → `superpowers`).
+- **Web source:** scan the raw file body for a `github.com/<org>/<repo>` URL in the first ~500 chars or in title/hero. If `<org>-<repo>` matches an existing **github** source slug, set `product:` on both pages to the web source's slug (the domain). Otherwise derive from the domain (strip `.com`/`.io`/etc, e.g. `runcabinet.com` → `cabinet`).
+- **YouTube:** derive from the video title or channel name (short, kebab-case). Never auto-grouped with other sources.
+- `product:` is always populated — never left as `null` after Step 2b.
 Report any grouping in the post-ingest confirmation.
 
 **Step 3 — Do NOT create topic pages.** Topic page creation happens at lint time only.
@@ -169,9 +171,10 @@ Skip. Do not run `git commit` for this ingest. See **Git — never auto-commit**
 ```yaml
 ---
 type: source
+source_url: <original URL of the source>
 tags: []
 related: []
-product: null
+product: <product-slug>
 detail_level: {{DETAIL_LEVEL}}
 created: YYYY-MM-DD
 updated: YYYY-MM-DD

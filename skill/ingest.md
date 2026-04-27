@@ -28,18 +28,21 @@ Read `raw_file_path` fully before writing any wiki content.
 ```yaml
 ---
 type: source
+source_url: <original URL of the source — GitHub repo URL, website URL, YouTube video URL>
 tags: []
 related: []
-product: null
+product: <product-slug>
 detail_level: <effective_detail_level>
 created: <today>
 updated: <today>
 ---
 ```
 
-`product:` groups sources that describe the same product (e.g. a marketing site + its own GitHub repo). Sources sharing a product slug count as one source for lint Check #4 (data gaps). Default `null`. Resolved in Step 2b below.
+`source_url:` is the canonical URL of the source (e.g. `https://github.com/org/repo`, `https://example.com`, `https://youtube.com/watch?v=ID`). Always populated.
 
-If the page **already exists** (this is an update or refresh): preserve the existing `created`, `tags`, `related`, and `product` values. Always overwrite `updated` and `detail_level`.
+`product:` is a short kebab-case identifier for the product or project this source describes (e.g. `cabinet`, `gsd`, `superpowers`, `claude-memory-compiler`). Derive from the repo/site name — strip the author prefix from GitHub slugs (e.g. `obra-superpowers` → `superpowers`, `coleam00-claude-memory-compiler` → `claude-memory-compiler`, `gsd-build-get-shit-done` → `gsd`). For web sources, use the domain (strip `.com`/`.io`/etc when readable). Sources describing the same product (e.g. a marketing site + its own GitHub repo) share the same `product:` slug. Resolved in Step 2b below.
+
+If the page **already exists** (this is an update or refresh): preserve the existing `created`, `tags`, `related`, `product`, and `source_url` values. Always overwrite `updated` and `detail_level`.
 
 **MUST NOT include a `sources:` field.** Source pages do not cite themselves.
 
@@ -70,10 +73,10 @@ Add per-paragraph inline citations only when a **second** raw file contributes t
 
 After writing the source page, scan existing source pages in `wiki/sources/` (excluding the page just written) and resolve a `product:` value:
 
-- **GitHub source:** read `homepageUrl` from the raw file's `## Metadata` block. Extract its hostname (strip `www.`, preserve subdomains). If any existing **web** source page has a slug equal to that hostname, set `product:` on both pages to that hostname.
-- **Web source:** scan the raw file body for a `github.com/<org>/<repo>` URL appearing in the landing page's first ~500 chars or in the page title/hero (this signals it's the canonical repo for the product, not a casual mention). If `<org>-<repo>` matches an existing **github** source slug, set `product:` on both pages to the web source's slug (the domain).
-- **YouTube sources:** never auto-grouped (skip).
-- **No match:** leave `product: null`.
+- **GitHub source:** read `homepageUrl` from the raw file's `## Metadata` block. Extract its hostname (strip `www.`, preserve subdomains). If any existing **web** source page has a slug equal to that hostname, set `product:` on both pages to that hostname. Otherwise derive the product slug from the repo slug: strip the author prefix (e.g. `obra-superpowers` → `superpowers`, `coleam00-claude-memory-compiler` → `claude-memory-compiler`, `gsd-build-get-shit-done` → `gsd`). Use the derived slug.
+- **Web source:** scan the raw file body for a `github.com/<org>/<repo>` URL appearing in the landing page's first ~500 chars or in the page title/hero. If `<org>-<repo>` matches an existing **github** source slug, set `product:` on both pages to the web source's slug (the domain). Otherwise derive the product slug from the domain (strip `.com`/`.io`/`.dev` suffix when the result is still recognizable, e.g. `runcabinet.com` → `cabinet`). Use the derived slug.
+- **YouTube sources:** derive from the video title or channel name (short, kebab-case). Never auto-grouped with other sources.
+- `product:` is always populated — never left as `null` after Step 2b.
 
 If a grouping is applied, also update the partner page's `product:` field in place. Report the grouping in the post-ingest confirmation so the human can verify or override (humans may set `product:` manually for cases the heuristic misses).
 
