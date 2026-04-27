@@ -30,13 +30,16 @@ Read `raw_file_path` fully before writing any wiki content.
 type: source
 tags: []
 related: []
+product: null
 detail_level: <effective_detail_level>
 created: <today>
 updated: <today>
 ---
 ```
 
-If the page **already exists** (this is an update or refresh): preserve the existing `created`, `tags`, and `related` values. Always overwrite `updated` and `detail_level`.
+`product:` groups sources that describe the same product (e.g. a marketing site + its own GitHub repo). Sources sharing a product slug count as one source for lint Check #4 (data gaps). Default `null`. Resolved in Step 2b below.
+
+If the page **already exists** (this is an update or refresh): preserve the existing `created`, `tags`, `related`, and `product` values. Always overwrite `updated` and `detail_level`.
 
 **MUST NOT include a `sources:` field.** Source pages do not cite themselves.
 
@@ -49,9 +52,30 @@ If the page **already exists** (this is an update or refresh): preserve the exis
    - **YouTube:** What the video is about (1 paragraph — sufficient to replace watching) | Key points by chapter | Notable quotes | Speaker context
    - **Web/product:** What it does | Key features | Architecture and concepts | Main APIs | When to use | Ecosystem
 
+**Formatting rules — apply uniformly to every source page:**
+
+- **No H1 heading.** The page slug (filename) and the `[[<slug>]]` wikilink in `wiki/index.md` already serve as the title. Body starts with the summary paragraph; first heading in the body is the first `## H2` section.
+- **No horizontal rules (`---`) between sections.** `## H2` headings provide enough structure. The only `---` lines are the YAML frontmatter delimiters.
+- **Populate `tags` and `related` at ingest time.**
+  - `tags`: 4–8 short kebab-case terms describing the source's main concepts, technologies, and domains. Specific over generic — prefer `claude-code-hooks`, `index-guided-retrieval`, `provider-adapter` over `ai`, `code`, `tool`. Pulled from the source's own headings, key features, and summary.
+  - `related`: slugs of existing source pages (in `wiki/sources/`) with substantial conceptual overlap (same problem space, shared architecture pattern, same underlying tool, etc.). Read each existing source's summary paragraph to judge overlap. May be empty if this is the first source ingested or there is no real overlap. Casual mentions do not count as related.
+  - **Bidirectional update:** for every slug `Y` that you add to this page's `related` list, also append this page's slug to `Y`'s `related` list (in `wiki/sources/Y.md`). Update `Y`'s `updated:` date. Without this, related references drift one-way — newly ingested pages link backward to older ones, but older pages never gain forward links to newer ones.
+- **Use the per-type section list as the canonical structure.** Keep the listed sections, in the listed order. Extra top-level sections are allowed only for genuinely substantial subsystems that don't fit elsewhere; fold incidental content (config, workflow, etc.) into one of the standard sections instead.
+
 Add per-paragraph inline citations only when a **second** raw file contributes to this page. The banner covers all content from the primary raw file alone.
 
 ---
+
+## Step 2b — Detect product grouping
+
+After writing the source page, scan existing source pages in `wiki/sources/` (excluding the page just written) and resolve a `product:` value:
+
+- **GitHub source:** read `homepageUrl` from the raw file's `## Metadata` block. Extract its hostname (strip `www.`, preserve subdomains). If any existing **web** source page has a slug equal to that hostname, set `product:` on both pages to that hostname.
+- **Web source:** scan the raw file body for a `github.com/<org>/<repo>` URL appearing in the landing page's first ~500 chars or in the page title/hero (this signals it's the canonical repo for the product, not a casual mention). If `<org>-<repo>` matches an existing **github** source slug, set `product:` on both pages to the web source's slug (the domain).
+- **YouTube sources:** never auto-grouped (skip).
+- **No match:** leave `product: null`.
+
+If a grouping is applied, also update the partner page's `product:` field in place. Report the grouping in the post-ingest confirmation so the human can verify or override (humans may set `product:` manually for cases the heuristic misses).
 
 ## Step 3 — Do NOT create topic pages
 
@@ -64,7 +88,7 @@ Topic creation happens at lint time only (lint Check #4). Skip this step entirel
 1. Read `wiki/index.md`.
 2. **If a row for this slug already exists** in the Sources table: update its date column and `detail_level` column in-place (do not add a new row; do not change the count).
 3. **If no row exists:** add a row to the Sources table:
-   `| <slug> | <type> | <effective_detail_level> | <today> | |`
+   `| [[<slug>]] | <type> | <effective_detail_level> | <today> | |`
    Then find the `_N sources ingested._` line and increment N by 1.
 4. Write the updated file.
 
@@ -72,7 +96,9 @@ Topic creation happens at lint time only (lint Check #4). Skip this step entirel
 
 ## Step 5 — Update `wiki/overview.md`
 
-1. Read `wiki/overview.md`. Check the `sources:` frontmatter list.
+**Invariant:** the body of `wiki/overview.md` contains **exactly one paragraph per entry in `sources:`**, in the same order. Number of paragraphs must equal the length of the `sources:` list. Verify this before writing.
+
+1. Read `wiki/overview.md`. Check the `sources:` frontmatter list and count the body paragraphs.
 
 2. **If `"[[<slug>]]"` already appears in `sources:`** — this is a refresh:
    - Update the `updated:` frontmatter field to `<today>`. Do not add another paragraph or duplicate the frontmatter entry.
@@ -83,11 +109,12 @@ Topic creation happens at lint time only (lint Check #4). Skip this step entirel
    - Update `sources:` frontmatter to: `sources:\n  - "[[<slug>]]"`
 
 4. **If `sources:` already has entries but does not include this slug** — extend the existing synthesis:
-   - Add a new paragraph covering what the new source contributes relative to existing ones. Cite `[[<slug>]]`.
+   - **Append a new dedicated paragraph for this source** at the end of the body. Do not merge the new source into an existing paragraph; do not skip writing one. The paragraph should describe what this source contributes *relative to existing ones* and cite `[[<slug>]]` at least once.
    - Append `  - "[[<slug>]]"` to the `sources:` frontmatter list.
 
-5. Update the `updated:` frontmatter field to `<today>`.
-6. Write the updated file.
+5. **Sanity check before writing:** the post-write paragraph count must equal `len(sources)`. If it doesn't, you've dropped or merged a paragraph — fix it.
+6. Update the `updated:` frontmatter field to `<today>`.
+7. Write the updated file.
 
 ---
 

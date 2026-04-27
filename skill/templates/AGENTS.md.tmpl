@@ -69,6 +69,7 @@ Frontmatter:
 type: source
 tags: []
 related: []
+product: null
 detail_level: {{DETAIL_LEVEL}}
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
@@ -77,13 +78,28 @@ updated: YYYY-MM-DD
 
 Rules:
 - **MUST NOT include a `sources:` field.** Source pages do not cite themselves.
+- `product:` groups sources for the same product (marketing site + own GitHub repo, etc.). Resolved in Step 2b. Default `null`.
 - First line of body: summary paragraph (what this source is and why it matters).
 - Second line: banner citation — `_All claims below are sourced from ../../raw/<type>/<file>.md unless otherwise noted._`
-- Then: sectioned body. Per-type structure:
+- Then: sectioned body. Per-type structure (canonical sections, in this order; extra top-level sections allowed only for genuinely substantial subsystems — fold incidental content into a listed section):
   - **GitHub:** what it does, installation, key features, architecture, example usage, maintenance status.
   - **YouTube:** what the video is about (1 paragraph — sufficient to replace watching), key points by chapter, notable quotes, speaker context.
   - **Web/product:** what it does, key features, architecture/concepts, main APIs, when to use, ecosystem.
+- **No H1 heading.** The slug + `[[<slug>]]` wikilink in `wiki/index.md` is the title. Body starts with the summary paragraph.
+- **No horizontal rules (`---`)** between sections — only at frontmatter delimiters. `## H2` headings are enough structure.
+- **Populate `tags` and `related` at ingest time.**
+  - `tags`: 4–8 short kebab-case terms describing the source's main concepts, technologies, and domains. Specific over generic — prefer `claude-code-hooks`, `provider-adapter` over `ai`, `tool`.
+  - `related`: slugs of existing source pages with substantial conceptual overlap (same problem space, shared architecture, same underlying tool). Read each existing source's summary paragraph to judge overlap. May be empty if this is the first source or no overlap exists.
+  - **Bidirectional update:** for every slug `Y` added to this page's `related`, append this page's slug to `Y`'s `related` list and bump `Y`'s `updated:` date. Otherwise older pages never gain forward links to newer ones.
 - Add per-paragraph citations only when a **second** raw file contributes to this page; otherwise the banner covers it.
+
+**Step 2b — Detect product grouping.**
+After writing the source page, scan existing `wiki/sources/*.md` and resolve a `product:` value:
+- **GitHub source:** read `homepageUrl` from the raw `## Metadata` block. Extract its hostname (strip `www.`). If any existing **web** source page slug matches that hostname, set `product:` on both pages to that hostname.
+- **Web source:** scan the raw file body for a `github.com/<org>/<repo>` URL in the first ~500 chars or in title/hero. If `<org>-<repo>` matches an existing **github** source slug, set `product:` on both pages to the web source's slug (the domain).
+- **YouTube:** never auto-grouped.
+- **No match:** leave `product: null`. Humans may set `product:` manually for cases the heuristic misses.
+Report any grouping in the post-ingest confirmation.
 
 **Step 3 — Do NOT create topic pages.** Topic page creation happens at lint time only.
 
@@ -92,11 +108,14 @@ Rules:
 - If no row exists: add `| <slug> | <type> | {{DETAIL_LEVEL}} | <YYYY-MM-DD> | |` and increment the source count in the `_N sources ingested._` line.
 
 **Step 5 — Update `wiki/overview.md`.**
+**Invariant:** the body contains **exactly one paragraph per entry in `sources:`**, in the same order. Verify this before writing.
+
 Read `wiki/overview.md` and check the `sources:` frontmatter list:
 - **If `[[<slug>]]` is already in `sources:`** (refresh case): update the `updated:` date only. Write the file. Stop — do not add another entry or another paragraph.
 - **If `sources: []` (first source ever ingested):** replace the placeholder body (the `_No sources ingested yet..._` paragraph) with an opening synthesis paragraph describing this source and what it contributes. Cite `[[<slug>]]`. Update `sources:` to `sources:\n  - "[[<slug>]]"`.
-- **If `sources:` already has entries but does not include `[[<slug>]]`:** add a new paragraph covering what the new source contributes relative to existing ones. Cite `[[<slug>]]`. Append `  - "[[<slug>]]"` to the `sources:` list.
-Update the `updated:` date. Write the file. This page cites `[[source page slugs]]`, not raw files directly.
+- **If `sources:` already has entries but does not include `[[<slug>]]`:** **append a new dedicated paragraph** covering what the new source contributes relative to existing ones — do not merge into an existing paragraph, do not skip writing one. Cite `[[<slug>]]`. Append `  - "[[<slug>]]"` to the `sources:` list.
+
+Sanity check: post-write paragraph count must equal `len(sources)`. Update the `updated:` date. Write the file. This page cites `[[source page slugs]]`, not raw files directly.
 
 **Step 6 — Append to `wiki/log.md`** (newest at top):
 ```
@@ -152,6 +171,7 @@ Skip. Do not run `git commit` for this ingest. See **Git — never auto-commit**
 type: source
 tags: []
 related: []
+product: null
 detail_level: {{DETAIL_LEVEL}}
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
@@ -202,17 +222,22 @@ Run `/pin-llm-wiki lint` to check wiki health.
 | 1 | Citation coverage — every factual claim has a chain to a raw file | ERROR (WARN on overview.md) |
 | 2 | Contradictions — conflicting claims across pages | WARN |
 | 3 | Orphan pages — no inbound `[[wikilinks]]` (includes overview.md and log.md) | WARN |
-| 4 | Data gaps — concept in ≥2 source pages with no topic page | INFO |
+| 4 | Data gaps — concept in ≥`topic_min_products` (default 3) distinct products with no topic page | INFO |
 | 5 | Missing cross-references — page mentions a wiki-known entity without linking | WARN |
 | 6 | Stale sources — last refresh > 30 days | INFO |
 | 7 | Terminology collisions — same term used for different concepts across sources | WARN |
 | 8 | Frontmatter shape — source pages must NOT have `sources:` | ERROR |
 | 9 | Citation path format — must be relative-from-file, not root-relative | ERROR |
 | 10 | Inbox consistency — inbox line marked [x] but still under ## Pending | WARN |
+| 11 | Adapter sync — `.cursor/rules/wiki-instructions.mdc` body and `.github/copilot-instructions.md` must match `AGENTS.md` | WARN (auto-fixed) |
 
 Auto-fixes applied on every lint run:
 - Missing `overview.md` / `log.md` links in `wiki/index.md`.
-- Stub topic pages for concepts flagged by Check #4 (scaffold only; body left for human or next `add`).
+- Re-sync `.cursor/rules/wiki-instructions.mdc` and `.github/copilot-instructions.md` from `AGENTS.md` when Check #11 detects drift (preserves the Cursor file's YAML frontmatter).
+
+Topic candidates from Check #4 are **reported only** by default (`topic_creation: report`) — promote them to real topic pages via the manual harvest flow below. Set `topic_creation: auto-stub` in `.pin-llm-wiki.yml` to restore the legacy behavior of auto-creating empty stub topic pages.
+
+**Source independence:** Check #4 counts distinct *products*, not distinct sources. Sources sharing a `product:` frontmatter value (e.g. a marketing site + its own GitHub repo) count as one product, so a feature shared between them does not falsely trigger a topic candidate.
 
 Checks #2 (contradictions) and #7 (terminology collisions) are deferred in Phase 1 — reported as informational notes only.
 

@@ -235,19 +235,24 @@ stale_threshold_days: 30    # configurable per §4.5 lint check
 | 1 | Citation coverage — every factual claim has a chain to a raw file; on `wiki/overview.md`, `[[source page]]` wikilinks count as the chain (see §5.4) | ERROR or WARN† |
 | 2 | Contradictions — conflicting claims across pages; rank by source authority | WARN |
 | 3 | Orphans — pages with no inbound `[[wikilinks]]`; **includes `overview.md` and `log.md`** | WARN |
-| 4 | Data gaps — concepts named in ≥2 source pages with no topic page | INFO (suggests topic creation) |
+| 4 | Data gaps — concepts named in ≥`topic_min_products` (default 3) distinct *products* with no topic page | INFO (suggests topic creation) |
 | 5 | Missing cross-references — page mentions a wiki-known entity without linking; empty `related:` when cross-refs are warranted | WARN |
 | 6 | Stale sources — last refresh > `stale_threshold_days` (default 30) | INFO |
 | 7 | Terminology collisions — same term used for different concepts across sources (e.g. "skills" in Superpowers vs DeepAgents) | WARN |
 | 8 | Frontmatter shape — source pages must NOT include `sources:`; topic/synthesis pages may | ERROR |
 | 9 | Citation path format — wiki-to-raw links must be relative-from-file (`../../raw/...` from `wiki/sources/`) | ERROR |
+| 11 | Adapter sync — `.cursor/rules/wiki-instructions.mdc` body and `.github/copilot-instructions.md` must match `AGENTS.md` | WARN (auto-fixed) |
 
 † **Check #1 severity:** **WARN** on `wiki/overview.md` only; **ERROR** on `wiki/sources/*`, `wiki/topics/*`, and other wiki pages.
 
 **Output:** structured report (counts by severity, list of findings with file:line references). **Auto-fix on every lint** (no `--fix` flag; Phase 1 is always this behavior):
 
 - **Auto-fix:** missing `overview.md` / `log.md` links in `index.md` scaffold.
-- **Auto-fix (stub only):** topic pages for Check #4 (concepts with ≥2-source coverage) — generate scaffold with frontmatter + banner citations, leave body for human or next `add` to fill.
+- **Auto-fix:** re-sync `.cursor/rules/wiki-instructions.mdc` and `.github/copilot-instructions.md` from `AGENTS.md` when drift is detected (Check #11). Preserves the Cursor file's existing YAML frontmatter.
+
+Topic candidates from Check #4 are **report-only by default** (`topic_creation: report`). The legacy `auto-stub` mode is preserved as an opt-in config but not recommended — empty stubs add navigation cost without information value. Promote candidates via the manual harvest flow.
+
+**Source independence:** Check #4 counts distinct products, not distinct sources. Sources sharing a `product:` frontmatter value (resolved at ingest time — see §4.6 Step 2b) count as one product, so a feature shared between e.g. a marketing site and its own GitHub repo does not falsely trigger a topic candidate.
 
 All other checks are report-only.
 
