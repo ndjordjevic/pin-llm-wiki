@@ -25,6 +25,8 @@ Accept one or more URLs from the invocation args (space-separated, or one per ca
 - `<!-- branch:X -->` — GitHub only
 - `<!-- clone -->` — GitHub only
 - `<!-- skip -->` — queued but skipped on next `run`
+- `<!-- companion:github.com/<org>/<repo> -->` — web only; override companion GitHub discovery with this exact repo
+- `<!-- no-companion -->` — web only; suppress companion GitHub fetch even if a repo is found
 
 An optional freeform **note** may follow the tags on the same line, wrapped in an HTML comment: `<!-- note: <text> -->`. This note is preserved as-is and ignored by all other subcommands.
 

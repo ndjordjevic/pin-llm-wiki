@@ -65,9 +65,12 @@ Do this **before** moving files, so a partial failure leaves the filesystem cons
 
 1. Read `wiki/overview.md`.
 2. Remove the line `  - "[[<slug>]]"` from the `sources:` frontmatter list.
-3. Leave the body paragraph(s) citing `[[<slug>]]` in place — those are human prose and are flagged in Step 7.
-4. Update the `updated:` frontmatter field to `<today>`.
-5. Write the updated file.
+3. **Remove the body paragraph for this slug.** The overview body invariant is `len(sources) == paragraph_count` (one paragraph per entry in `sources:`, in the same order — see `ingest.md` Step 5).
+   - Find the paragraph that primarily cites `[[<slug>]]` and delete it.
+   - If `[[<slug>]]` is mentioned within a paragraph that primarily cites a different surviving source, just remove the `[[<slug>]]` reference (and any sentence solely about it) — do not delete the whole paragraph.
+4. **Invariant check before writing:** post-edit body paragraph count must equal the new `len(sources)`. If it does not, do NOT write the file — report `"overview.md paragraph count mismatch after removing [[<slug>]]. Fix manually: paragraph count must equal len(sources)."` and stop. (The slug has already been removed from `sources:` in step 2; if you bail here, the user must reconcile the body manually.)
+5. Update the `updated:` frontmatter field to `<today>`.
+6. Write the updated file.
 
 ---
 
@@ -132,4 +135,4 @@ Dangling references found (<N>):
 
 Fix dangling references manually (update or remove the wikilinks and citations in the listed pages), then run `/pin-llm-wiki lint` to verify the wiki is clean.
 
-**To undo:** files are in `wiki/.archive/`. Move them back to their original paths, restore the index.md row, re-add the overview.md frontmatter entry, and revert the log entry manually.
+**To undo:** files are in `wiki/.archive/`. Move them back to their original paths, restore the index.md row, re-add the overview.md frontmatter entry and body paragraph, and revert the log entry manually.

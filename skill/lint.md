@@ -44,6 +44,7 @@ Step G  — Check #5   (missing cross-references)
 Step H  — Check #4   (data gaps)  →  Auto-fix 2 (topic stubs)
 Step I  — Check #10  (inbox consistency)
 Step L  — Check #11  (adapter sync)  →  Auto-fix 3 (re-sync adapters from AGENTS.md)
+Step M  — Check #12  (split-product source pages)
 Step J  — Check #2   (contradictions) — Phase 1: deferred
 Step K  — Check #7   (terminology collisions) — Phase 1: deferred
 ```
@@ -230,6 +231,18 @@ If the wiki is missing one of the adapter files entirely (e.g. a Copilot-only wi
 
 ---
 
+## Step M — Check #12: Split-product source pages (WARN)
+
+Scan all source pages in `wiki/sources/*.md`. For each page read its `product:` and `source_url:` frontmatter fields. Build a map: `product → list of {slug, source_url}`.
+
+For each product that has **2 or more entries** in the map and whose entries all **lack a `companion_urls:` field** (i.e. none have been unified yet):
+- If the group contains **at least one web source** (source_url does NOT start with `https://github.com`) AND **at least one github source** (source_url starts with `https://github.com`):
+  → `WARN: split-product — '<product>' has separate web source page (<web-slug>) and github source page (<github-slug>); the unified ingestion flow now produces a single source page per product. To consolidate, /pin-llm-wiki remove <github-slug> and re-add the web URL with /pin-llm-wiki run (the companion fetch will pick up the GitHub repo automatically).`
+
+Severity: WARN. Not auto-fixed — consolidation is destructive; requires human action.
+
+---
+
 ## Step J — Check #2: Contradictions (Phase 1: deferred)
 
 No findings generated. Add one note to the report:
@@ -250,7 +263,7 @@ Print the full lint report in this format:
 
 ```
 Lint report — <domain> wiki
-<today> | <N> sources | 10 checks
+<today> | <N> sources | 12 checks
 
 ERRORs (<count>)
   [Check #N]  <file>:<line>  <message>

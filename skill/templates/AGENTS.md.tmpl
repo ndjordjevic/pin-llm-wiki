@@ -58,8 +58,10 @@ inbox.md            ← agents may add to ## Pending via `queue`; all other edit
 
 Run this workflow when ingesting a source (via `add` or `run`). Execute steps in order.
 
-**Step 1 — Read the raw file.**
+**Step 1 — Read the raw file(s).**
 The raw file is in `raw/<type>/<slug>...md`. Read it fully before writing any wiki content.
+
+For unified web+github pages: if a `companion_raw_file_path` is passed by the caller (non-null), also read it fully. Hold both in memory. The companion raw supplies content for the github-sourced sections.
 
 **Step 2 — Create or update `wiki/sources/<slug>.md`.**
 
@@ -68,6 +70,11 @@ Frontmatter:
 ---
 type: source
 source_url: <original URL of the source — GitHub repo URL, website URL, YouTube video URL>
+companion_urls:              # ONLY on unified web+github pages; omit entirely on all others
+  - https://github.com/<org>/<repo>
+raw_files:                   # ONLY on unified web+github pages; omit entirely on all others
+  - ../../raw/web/<domain>.md
+  - ../../raw/github/<org>-<repo>.md
 tags: []
 related: []
 product: <product-slug>
@@ -81,12 +88,14 @@ Rules:
 - **MUST NOT include a `sources:` field.** Source pages do not cite themselves.
 - `source_url:` is the canonical URL of the source (e.g. `https://github.com/org/repo`, `https://example.com`, `https://youtube.com/watch?v=ID`). Always populated.
 - `product:` is a short kebab-case identifier for the product or project this source describes. Derive from the repo/site name — strip the author prefix from GitHub slugs (e.g. `obra-superpowers` → `superpowers`, `coleam00-claude-memory-compiler` → `claude-memory-compiler`, `gsd-build-get-shit-done` → `gsd`). For web sources, use the domain (strip `.com`/`.io`/etc, e.g. `runcabinet.com` → `cabinet`). Sources describing the same product share the same `product:` slug. Resolved in Step 2b. Always populated — never `null`.
+- `companion_urls:` and `raw_files:` are present **only** on unified web+github pages. **Omit both fields entirely** on standalone web, github, and youtube source pages — do not write empty lists.
 - First line of body: summary paragraph (what this source is and why it matters).
 - Second line: banner citation — `_All claims below are sourced from ../../raw/<type>/<file>.md unless otherwise noted._`
 - Then: sectioned body. Per-type structure (canonical sections, in this order; extra top-level sections allowed only for genuinely substantial subsystems — fold incidental content into a listed section):
   - **GitHub:** what it does, installation, key features, architecture, example usage, maintenance status.
   - **YouTube:** what the video is about (1 paragraph — sufficient to replace watching), key points by chapter, notable quotes, speaker context.
-  - **Web/product:** what it does, key features, architecture/concepts, main APIs, when to use, ecosystem.
+  - **Web/product (no companion):** what it does, key features, architecture/concepts, main APIs, when to use, ecosystem.
+  - **Web/product (unified):** see **Unified body structure** below.
 - **No H1 heading.** The slug + `[[<slug>]]` wikilink in `wiki/index.md` is the title. Body starts with the summary paragraph.
 - **No horizontal rules (`---`)** between sections — only at frontmatter delimiters. `## H2` headings are enough structure.
 - **Populate `tags` and `related` at ingest time.**
@@ -94,6 +103,43 @@ Rules:
   - `related`: slugs of existing source pages with substantial conceptual overlap (same problem space, shared architecture, same underlying tool). Read each existing source's summary paragraph to judge overlap. May be empty if this is the first source or no overlap exists.
   - **Bidirectional update:** for every slug `Y` added to this page's `related`, append this page's slug to `Y`'s `related` list and bump `Y`'s `updated:` date. Otherwise older pages never gain forward links to newer ones.
 - Add per-paragraph citations only when a **second** raw file contributes to this page; otherwise the banner covers it.
+
+**Unified body structure** (web source with companion GitHub):
+
+```
+<Summary paragraph — synthesized web + github perspective>
+
+_All claims below are sourced from ../../raw/web/<domain>.md unless otherwise noted._
+
+## What it does
+<web-sourced; banner covers>
+
+## Key features
+<web-sourced for product features; github technical detail ends with: (../../raw/github/<org>-<repo>.md)>
+
+## Architecture
+<github-sourced; each paragraph ends with: (../../raw/github/<org>-<repo>.md)>
+
+## Installation
+<github-sourced; inline-cited: (../../raw/github/<org>-<repo>.md)>
+
+## Example usage
+<github-sourced; inline-cited: (../../raw/github/<org>-<repo>.md)>
+
+## When to use
+<web-sourced; banner covers>
+
+## Maintenance status
+<github-sourced — stars, release, license, roadmap; inline-cited: (../../raw/github/<org>-<repo>.md)>
+
+## Ecosystem
+<web-sourced; banner covers>
+
+## Documentation   [optional — only if web raw has a substantial docs structure]
+<web-sourced; banner covers>
+```
+
+The banner cites the primary web raw file. All github-sourced paragraphs carry trailing inline citations `(../../raw/github/<org>-<repo>.md)`. Both formats satisfy citation rule #9 (relative-from-file).
 
 **Step 2b — Detect product grouping.**
 After writing the source page, scan existing `wiki/sources/*.md` and resolve `product:`:
@@ -125,6 +171,11 @@ Sanity check: post-write paragraph count must equal `len(sources)`. Update the `
 
 - Created: wiki/sources/<slug>.md
 - Updated: wiki/index.md, wiki/overview.md, wiki/log.md, raw/<type>/README.md, inbox.md
+```
+For unified pages, extend the Updated line and add:
+```
+- Updated: wiki/index.md, wiki/overview.md, wiki/log.md, raw/web/README.md, raw/github/README.md, inbox.md
+- Companion: raw/github/<companion-slug>.md
 ```
 
 **Step 7 — Update `raw/<type>/README.md`.**
@@ -181,6 +232,26 @@ updated: YYYY-MM-DD
 ---
 ```
 
+**Unified source pages** (web + companion GitHub) — same as above, plus two optional fields:
+```yaml
+---
+type: source
+source_url: https://<domain>/
+companion_urls:
+  - https://github.com/<org>/<repo>
+raw_files:
+  - ../../raw/web/<domain>.md
+  - ../../raw/github/<org>-<repo>.md
+tags: []
+related: []
+product: <product-slug>
+detail_level: standard
+created: YYYY-MM-DD
+updated: YYYY-MM-DD
+---
+```
+`companion_urls` and `raw_files` are absent on all non-unified pages.
+
 **Topic pages** (`wiki/topics/*.md`):
 ```yaml
 ---
@@ -209,10 +280,12 @@ To re-fetch an already-ingested source:
 2. Run `/pin-llm-wiki run`.
 
 The run command scans `## Completed` for `<!-- refresh -->` and:
-1. Re-fetches the source using the same protocol.
+1. Re-fetches the source using the same protocol. For unified pages (with `raw_files:` frontmatter), re-fetches each raw file independently using its path-prefix protocol (`raw/web/` → web, `raw/github/` → github).
 2. Strips any frontmatter field whose value matches `YYYY-MM-DD` or an ISO 8601 timestamp pattern from both copies before comparing. If unchanged, logs `refresh: <slug> (no change)` and stops.
-3. If changed: overwrites the raw file, re-runs ingest steps 2–5 and 7 (updates wiki pages; skips step 6 log, inbox-move, and commit), appends a log entry `refresh: <slug> | content updated`.
-4. Removes `<!-- refresh -->` from the inbox line, appends `<!-- refreshed YYYY-MM-DD -->`, preserves `[ ]`/`[x]` state. Do not run `git commit` (see **Git — never auto-commit**).
+3. If changed: overwrites the changed raw file(s), re-runs ingest steps 2–5 and 7 (updates wiki pages; skips step 6 log, inbox-move, and commit), appends a log entry `refresh: <slug> | content updated`. For unified pages, derive companion context from the existing source page's `raw_files:` list and pass it to ingest so the unified body is preserved.
+4. For unified pages: if some raw fetches fail, logs `partial refresh: <slug> | fetch errors: <list>` and proceeds with the raws that succeeded. If all fail, aborts and logs an error.
+5. Refresh never changes page structure: companion-discovery output from the web protocol is discarded, `raw_files:` and `companion_urls:` are preserved as-is, and a non-unified page is never promoted to unified. To restructure, `remove` and re-add.
+6. Removes `<!-- refresh -->` from the inbox line, appends `<!-- refreshed YYYY-MM-DD -->`, preserves `[ ]`/`[x]` state. Do not run `git commit` (see **Git — never auto-commit**).
 
 ---
 
@@ -233,6 +306,7 @@ Run `/pin-llm-wiki lint` to check wiki health.
 | 9 | Citation path format — must be relative-from-file, not root-relative | ERROR |
 | 10 | Inbox consistency — inbox line marked [x] but still under ## Pending | WARN |
 | 11 | Adapter sync — `.cursor/rules/wiki-instructions.mdc` body and `.github/copilot-instructions.md` must match `AGENTS.md` | WARN (auto-fixed) |
+| 12 | Split-product sources — web and github source pages share `product:` but lack `companion_urls` | WARN |
 
 Auto-fixes applied on every lint run:
 - Missing `overview.md` / `log.md` links in `wiki/index.md`.
@@ -278,6 +352,8 @@ Agents (human-directed or autonomous) may suggest URLs for later ingest without 
   - `<!-- branch:X -->` — GitHub: use this branch instead of default
   - `<!-- clone -->` — GitHub deep: full git clone
   - `<!-- skip -->` — queue the URL but skip it on the next `run`
+  - `<!-- companion:github.com/<org>/<repo> -->` — web only; skip GitHub discovery, use this exact repo as the companion
+  - `<!-- no-companion -->` — web only; suppress companion GitHub fetch even if a repo is found
   - `<!-- note: <text> -->` — freeform rationale visible to the human reviewer (ignored by all other subcommands)
 - Never run `git commit` after `queue` — see **Git — never auto-commit**.
 
@@ -288,6 +364,25 @@ Agents (human-directed or autonomous) may suggest URLs for later ingest without 
 `/pin-llm-wiki remove <slug>`:
 1. Validate slug exists in `wiki/index.md` Sources table.
 2. Soft-delete: move `wiki/sources/<slug>.md` to `wiki/.archive/wiki/sources/`. For raw files, check these exact paths only — `raw/<type>/<slug>.md` (single file) and `raw/<type>/<slug>/` (deep clone directory) — and move whichever exists to `wiki/.archive/raw/<type>/` (preserving structure). Do not glob or prefix-match. Update `wiki/index.md` (remove row, decrement count) and append to `wiki/log.md`.
-3. Run lint immediately: flags orphaned `[[wikilinks]]` and pages whose `sources:` frontmatter still references `[[<slug>]]`.
-4. Report to user; do not auto-rewrite.
-5. **To undo:** files are in `wiki/.archive/`. Move them back to their original paths and restore the index.md row manually.
+3. Update `wiki/overview.md`: remove `  - "[[<slug>]]"` from the `sources:` frontmatter list, and delete its body paragraph so the invariant `len(sources) == paragraph_count` still holds. If `[[<slug>]]` is only a passing mention inside another source's paragraph, drop the reference but leave the paragraph.
+4. Run lint immediately: flags orphaned `[[wikilinks]]` on surviving pages and pages whose `sources:` frontmatter still references `[[<slug>]]`.
+5. Report to user; do not auto-rewrite the surviving pages flagged by lint.
+6. **To undo:** files are in `wiki/.archive/`. Move them back to their original paths and restore the index.md row, the overview.md frontmatter entry, and the overview.md body paragraph manually.
+
+---
+
+## Consolidating split-product sources
+
+If lint Check #12 flags a split-product wiki (separate web and github source pages share `product:`), the new ingestion flow produces a single unified page per product. To consolidate:
+
+1. `/pin-llm-wiki remove <github-slug>` to soft-delete the standalone github source page (raw file is archived too).
+2. Re-add the web URL with `/pin-llm-wiki run` (or queue + run). The web fetch protocol's companion-discovery step will pick up the GitHub repo automatically and the ingest will produce a unified source page citing both raw files.
+3. Run `/pin-llm-wiki lint` to verify no dangling `[[<github-slug>]]` references remain.
+
+If you prefer not to re-fetch, edit by hand:
+1. Add `companion_urls` and `raw_files` frontmatter to the web source page.
+2. Merge github body sections into the web page using inline citations `(../../raw/github/<org>-<repo>.md)`.
+3. Move `wiki/sources/<github-slug>.md` → `wiki/.archive/sources/`. Keep `raw/github/<github-slug>.md` in place — it is now the companion raw.
+4. Edit `wiki/index.md`: remove the github row, decrement source count.
+5. Edit `wiki/overview.md`: remove `[[<github-slug>]]` from `sources:` list; delete its paragraph (the invariant is `len(sources) == paragraph_count`).
+6. On any source page whose `related:` references `[[<github-slug>]]`, replace with `[[<web-slug>]]` (or remove if `[[<web-slug>]]` is already there).

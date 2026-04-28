@@ -52,8 +52,14 @@ Locate the inbox line for this URL. Extract any tags:
 - `<!-- detail:X -->` — overrides `detail_level` for this source only. X must be `brief`, `standard`, or `deep`.
 - `<!-- branch:X -->` — GitHub only; overrides the branch detected from the repo.
 - `<!-- clone -->` — GitHub only; effective only at `deep`; triggers a full `git clone`.
+- `<!-- companion:github.com/<org>/<repo> -->` — Web only; skip GitHub discovery, use this exact repo as the companion.
+- `<!-- no-companion -->` — Web only; suppress companion GitHub fetch even if a repo is detected.
 
 **Effective detail level** = `<!-- detail:X -->` tag if present, else `detail_level` from config.
+
+**Companion context** (web sources only):
+- `companion_override_url` = URL from `<!-- companion:... -->` tag, or null.
+- `suppress_companion` = true if `<!-- no-companion -->` is present, else false.
 
 ---
 
@@ -96,9 +102,30 @@ Use the effective detail level throughout. Apply `<!-- branch:X -->` and `<!-- c
 
 ---
 
+## Companion fetch
+
+**Only runs when:** `type = web` AND `companion_github_url` (returned by the web fetch protocol step 4) is non-null AND `suppress_companion` is false.
+
+If `companion_override_url` is set, use it as `companion_github_url` instead of what the protocol discovered.
+
+**Guard: self-loop** — if `companion_github_url` resolves to `github.com/<org>/<repo>` and the inbox URL itself is `https://github.com/<org>/<repo>` (same repo), discard the companion and set `companion_github_url = null`. Skip the companion fetch.
+
+Steps:
+1. Derive `companion_slug` = `<org>-<repo>` from `companion_github_url`.
+2. Derive `companion_raw_file_path` = `raw/github/<org>-<repo>.md`.
+3. Read `<skill-dir>/templates/protocols/github.md` and fetch `github.com/<org>/<repo>`. Use the same `effective_detail_level`. Apply any `<!-- branch:X -->` tag from the inbox line (the companion inherits it).
+4. Write `companion_raw_file_path`.
+5. Update `raw/github/README.md`: add a row for the companion repo (or update in-place if already present).
+
+**Failure handling:**
+- Fetch error (repo not found, rate limit, etc.): log `WARN: companion fetch failed for <companion_github_url> — <reason>`. Set `companion_slug = null`. Proceed with web-only ingest.
+- 200k token guard: if adding the companion fetch would exceed the cumulative budget, ask the user to choose: (a) proceed companion-only at `brief`, (b) skip companion, or (c) abort. Do not silently skip.
+
+---
+
 ## Ingest
 
-Once the raw file is written, read `<skill-dir>/ingest.md` and follow its instructions.
+Once the raw file(s) are written, read `<skill-dir>/ingest.md` and follow its instructions.
 
 Carry this context into ingest:
 
@@ -110,6 +137,8 @@ Carry this context into ingest:
 | `effective_detail_level` | tag override or config default |
 | `auto_mark_complete` | from config |
 | `today` | current date `YYYY-MM-DD` |
+| `companion_slug` | `<org>-<repo>` if companion fetch succeeded; null otherwise |
+| `companion_raw_file_path` | `raw/github/<org>-<repo>.md` if companion fetch succeeded; null otherwise |
 
 ---
 
@@ -126,10 +155,12 @@ Ingested: <url>
   Raw:         <raw_file_path>
   Wiki page:   wiki/sources/<slug>.md
   Detail:      <effective_detail_level>
+  Companion:   raw/github/<org>-<repo>.md   ← only when companion fetch succeeded
 
 Updated: wiki/index.md, wiki/overview.md, wiki/log.md, raw/<type>/README.md, inbox.md
 ```
 
+If companion fetch was attempted but failed: `  Companion:   fetch failed (<reason>) — web-only page produced`.
 If the detected type was not in `source_types`, append: `  Note: source type <type> is not in this wiki's source_types config.`
 
 Do not run `git commit`—see the wiki’s `AGENTS.md` **Git — never auto-commit** (suggested message for the human: `ingest: <slug>`).

@@ -30,9 +30,12 @@ Runs a short interview (domain, detail level, source types, git settings), then 
 
 ```
 /pin-llm-wiki add https://github.com/org/repo
+/pin-llm-wiki add https://example.com
 ```
 
 Fetches, ingests, and writes `wiki/sources/<slug>.md`. Updates index, overview, log, and inbox in one shot.
+
+For **web sources**, the skill automatically discovers the product's GitHub repo from the page content and fetches it as a companion. The result is a single unified source page (`wiki/sources/<domain>.md`) that covers the product website and the GitHub repo together — one inbox entry, one source page. Use `<!-- no-companion -->` to suppress this or `<!-- companion:github.com/<org>/<repo> -->` to override the discovered repo.
 
 ### Process pending inbox items
 
@@ -55,6 +58,8 @@ Append these (as HTML comments) to any URL line:
 | `branch:dev` | GitHub: use this branch instead of default |
 | `clone` | GitHub deep: full `git clone` to `raw/github/<org>-<repo>/` |
 | `skip` | Skip this URL on the next run |
+| `companion:github.com/<org>/<repo>` | Web: skip GitHub discovery, use this repo as the companion |
+| `no-companion` | Web: suppress companion GitHub fetch even if a repo is found |
 
 Example:
 ```
@@ -67,7 +72,7 @@ Example:
 /pin-llm-wiki lint
 ```
 
-Runs 10 health checks (citation coverage, orphans, stale sources, frontmatter shape, etc.). Auto-fixes missing index links and creates topic stubs for concepts appearing in 2+ sources.
+Runs 12 health checks (citation coverage, orphans, stale sources, frontmatter shape, split-product sources, etc.). Auto-fixes missing index links and re-syncs Cursor/Copilot adapter files.
 
 ### Queue a source (agent-friendly)
 

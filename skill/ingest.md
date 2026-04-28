@@ -12,12 +12,16 @@ Called by `add`, `run`, and `refresh`. Execute steps in order.
 | `effective_detail_level` | resolved detail level (`brief` / `standard` / `deep`) |
 | `auto_mark_complete` | from `.pin-llm-wiki.yml` |
 | `today` | current date `YYYY-MM-DD` |
+| `companion_slug` | `<org>-<repo>` if a companion GitHub repo was fetched; `null` otherwise |
+| `companion_raw_file_path` | `raw/github/<org>-<repo>.md` if companion fetch succeeded; `null` otherwise |
 
 ---
 
-## Step 1 — Read the raw file
+## Step 1 — Read the raw file(s)
 
 Read `raw_file_path` fully before writing any wiki content.
+
+If `companion_raw_file_path` is non-null: also read it fully. Hold both in memory. The companion raw file supplies content for the github-sourced sections of the unified source page.
 
 ---
 
@@ -29,6 +33,11 @@ Read `raw_file_path` fully before writing any wiki content.
 ---
 type: source
 source_url: <original URL of the source — GitHub repo URL, website URL, YouTube video URL>
+companion_urls:              # ONLY on unified web+github pages; omit entirely on all others
+  - https://github.com/<org>/<repo>
+raw_files:                   # ONLY on unified web+github pages; omit entirely on all others
+  - ../../raw/web/<domain>.md
+  - ../../raw/github/<org>-<repo>.md
 tags: []
 related: []
 product: <product-slug>
@@ -42,7 +51,9 @@ updated: <today>
 
 `product:` is a short kebab-case identifier for the product or project this source describes (e.g. `cabinet`, `gsd`, `superpowers`, `claude-memory-compiler`). Derive from the repo/site name — strip the author prefix from GitHub slugs (e.g. `obra-superpowers` → `superpowers`, `coleam00-claude-memory-compiler` → `claude-memory-compiler`, `gsd-build-get-shit-done` → `gsd`). For web sources, use the domain (strip `.com`/`.io`/etc when readable). Sources describing the same product (e.g. a marketing site + its own GitHub repo) share the same `product:` slug. Resolved in Step 2b below.
 
-If the page **already exists** (this is an update or refresh): preserve the existing `created`, `tags`, `related`, `product`, and `source_url` values. Always overwrite `updated` and `detail_level`.
+`companion_urls:` and `raw_files:` are present **only** on unified web+github pages (when `companion_slug` is non-null). **Omit both fields entirely** on standalone web, github, and youtube source pages — do not write empty lists.
+
+If the page **already exists** (this is an update or refresh): preserve the existing `created`, `tags`, `related`, `product`, `source_url`, `companion_urls`, and `raw_files` values. Always overwrite `updated` and `detail_level`.
 
 **MUST NOT include a `sources:` field.** Source pages do not cite themselves.
 
@@ -53,7 +64,45 @@ If the page **already exists** (this is an update or refresh): preserve the exis
 3. Sectioned body by type:
    - **GitHub:** What it does | Installation | Key features | Architecture | Example usage | Maintenance status
    - **YouTube:** What the video is about (1 paragraph — sufficient to replace watching) | Key points by chapter | Notable quotes | Speaker context
-   - **Web/product:** What it does | Key features | Architecture and concepts | Main APIs | When to use | Ecosystem
+   - **Web/product (no companion):** What it does | Key features | Architecture and concepts | Main APIs | When to use | Ecosystem
+   - **Web/product (unified — `companion_slug` non-null):** see **Unified body structure** below
+
+**Unified body structure** (web source with companion GitHub — `companion_slug` non-null):
+
+```
+<Summary paragraph — synthesized web + github perspective>
+
+_All claims below are sourced from ../../raw/web/<domain>.md unless otherwise noted._
+
+## What it does
+<web-sourced; banner covers — no inline citation needed>
+
+## Key features
+<web-sourced for product features; github technical detail ends with: (../../raw/github/<org>-<repo>.md)>
+
+## Architecture
+<github-sourced; each paragraph ends with: (../../raw/github/<org>-<repo>.md)>
+
+## Installation
+<github-sourced; inline-cited: (../../raw/github/<org>-<repo>.md)>
+
+## Example usage
+<github-sourced; inline-cited: (../../raw/github/<org>-<repo>.md)>
+
+## When to use
+<web-sourced; banner covers>
+
+## Maintenance status
+<github-sourced — stars, release, license, roadmap; inline-cited: (../../raw/github/<org>-<repo>.md)>
+
+## Ecosystem
+<web-sourced; banner covers>
+
+## Documentation   [optional — only if web raw has a substantial docs structure]
+<web-sourced; banner covers>
+```
+
+The banner cites the primary web raw file. All github-sourced paragraphs carry trailing inline citations `(../../raw/github/<org>-<repo>.md)`. Both formats satisfy lint check #9 (relative-from-file).
 
 **Formatting rules — apply uniformly to every source page:**
 
@@ -132,6 +181,12 @@ Read `wiki/log.md`. Insert this block below the frontmatter block and the `# ...
 - Updated: wiki/index.md, wiki/overview.md, wiki/log.md, raw/<type>/README.md, inbox.md
 ```
 
+When `companion_slug` is non-null, extend the Updated line and add a Companion line:
+```
+- Updated: wiki/index.md, wiki/overview.md, wiki/log.md, raw/web/README.md, raw/github/README.md, inbox.md
+- Companion: raw/github/<companion_slug>.md
+```
+
 Write the updated file.
 
 ---
@@ -148,6 +203,8 @@ Read `raw/<type>/README.md`.
 - **Web:** `| raw/web/<domain>.md | <domain> | <pages-fetched> | <today> | |`
 
 Write the updated file.
+
+**When `companion_slug` is non-null:** also update `raw/github/README.md`. The companion row was already written during the companion fetch step in `add.md`/`run.md` — verify it exists and update the date in-place. Do not append a duplicate row.
 
 ---
 

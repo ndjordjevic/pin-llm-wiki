@@ -52,6 +52,7 @@ If the line contains `<!-- skip -->`: append `{pass: 1, url: <url>, outcome: ski
 Extract:
 - **URL** — first token after `- [ ] `
 - **Tags** — `<!-- detail:X -->`, `<!-- branch:X -->`, `<!-- clone -->` if present
+- **Companion tags** (web only) — `<!-- companion:github.com/<org>/<repo> -->` → `companion_override_url`; `<!-- no-companion -->` → `suppress_companion = true`
 
 ### 3. Effective detail level
 
@@ -90,6 +91,24 @@ Apply `<!-- branch:X -->` and `<!-- clone -->` tags (GitHub only). Use the effec
 | 200k token guard | Cumulative input tokens for this source approaches 200k → halt the entire run, surface to user. Do not continue to remaining items. |
 | Other error | Log the error. Leave line in `## Pending` unchanged. Append `{pass: 1, url, outcome: fetch-error: <reason>}` to run log. Continue to next item. |
 
+### 6b. Companion fetch (web sources only)
+
+**Only runs when:** type = web AND `companion_github_url` (returned by the web fetch protocol step 4) is non-null AND `suppress_companion` is false.
+
+If `companion_override_url` is set, use it as `companion_github_url` instead of the discovered value.
+
+**Self-loop guard:** if `companion_github_url` resolves to the same repo as the inbox URL, discard it and set `companion_github_url = null`.
+
+Steps:
+1. Derive `companion_slug` = `<org>-<repo>` and `companion_raw_file_path` = `raw/github/<org>-<repo>.md`.
+2. Read `<skill-dir>/templates/protocols/github.md` and fetch `github.com/<org>/<repo>` using `effective_detail_level`. Inherit any `<!-- branch:X -->` tag.
+3. Write `companion_raw_file_path`.
+4. Update `raw/github/README.md` (add row or update in-place).
+
+**Failure:** if fetch errors, append `{pass: 1, url, outcome: companion-fetch-warn: <reason>}` to run log, set `companion_slug = null`, continue with web-only ingest. Do not mark the item as failed — the primary fetch succeeded.
+
+---
+
 ### 7. Ingest
 
 Read `<skill-dir>/ingest.md` and follow its instructions.
@@ -104,6 +123,8 @@ Pass this context:
 | `effective_detail_level` | override or config default |
 | `auto_mark_complete` | from config |
 | `today` | current date |
+| `companion_slug` | `<org>-<repo>` if companion fetch succeeded; null otherwise |
+| `companion_raw_file_path` | `raw/github/<org>-<repo>.md` if companion fetch succeeded; null otherwise |
 
 Ingest step 9 is a no-op for git—do not run `git commit` for ingest (see the wiki’s `AGENTS.md` **Git — never auto-commit**).
 
@@ -127,33 +148,47 @@ Extract URL and any type-detection tags. Detect source type (same rules as Pass 
 
 For **YouTube**: the full slug includes the title, which is encoded in the raw filename. Scan `raw/youtube/` for files whose name starts with `<video-id>-`. If exactly one match: use its full name as the slug. If zero matches: report error ("raw file for <video-id> not found — was this source ever ingested?") and skip. If more than one match: report error ("ambiguous raw files for <video-id>: <list>") and skip.
 
-### 2. Read existing raw file
+### 2. Read existing raw file(s)
 
-Read `raw_file_path` fully into memory (this is the "before" state).
+Read the existing `wiki/sources/<slug>.md` frontmatter. Check whether it has a `raw_files:` list (indicating a **unified page**).
+
+**Unified page** (`raw_files:` present): iterate over every path in `raw_files:`. For each, read the existing file (before state) and hold in memory.
+
+**Non-unified page** (no `raw_files:`): read `raw_file_path` only (existing behavior unchanged).
 
 ### 3. Re-fetch
 
-Read the protocol file for the detected type and re-fetch using the same protocol. Do not overwrite the raw file yet — hold the new content in memory.
+**Unified page:** for each raw file in `raw_files:`, determine the protocol from the path prefix (`raw/web/` → web protocol, `raw/github/` → github protocol) and re-fetch. Hold new content in memory without overwriting yet.
+
+**Non-unified page:** re-fetch using the detected-type protocol as before.
+
+**Discovery output is discarded during refresh.** Refresh only updates the URLs already listed in the existing source page — it never promotes a non-unified page to unified, never adds a new companion, and never changes `raw_files:`. If the web protocol's step 4 returns a `companion_github_url`, ignore it. To change page structure, the user must `remove` and re-add.
 
 ### 4. Compare
 
-Strip from both the old and new content any frontmatter fields whose value is a date or timestamp that changes on every fetch (any field whose value matches `YYYY-MM-DD` or an ISO 8601 timestamp pattern). Compare the remainder.
+Strip from both copies any frontmatter field whose value matches `YYYY-MM-DD` or an ISO 8601 timestamp. Compare.
 
-**If content is identical:**
-- Record `refresh: <slug> (no change)` in the run log only — do not write to `wiki/log.md`.
-- Proceed to step 5.
+**Unified page:**
+- `changed_raws` = list of raw files where new content differs from old.
+- `failed_fetches` = list of raw files where re-fetch errored.
+- All fetches failed → abort this item; append error to run log; proceed to step 5 (update inbox line).
+- Some fetches failed → log `WARN: partial refresh for <slug> (<failed count> raw(s) failed: <paths>)`; proceed with `changed_raws` only.
+- `changed_raws` non-empty → overwrite each changed raw; run ingest steps 2–5 and 7 (skip 6, 8, 9) **with unified context** (see below); write refresh log entry below.
+- All unchanged → record `refresh: <slug> (no change)`.
 
-**If content differs:**
-- Overwrite `raw_file_path` with the new fetched content.
-- Run ingest steps 2–5 and 7 (re-create/update `wiki/sources/<slug>.md`, `wiki/index.md`, `wiki/overview.md`, `raw/<type>/README.md`). Skip step 6 — the refresh log entry is written below instead. Skip step 8 (inbox line is already in `## Completed`) and step 9 (commit is done after step 5).
-- Append to `wiki/log.md` immediately below the heading (newest at top):
-  ```
-  ## <today> | refresh | <slug> | content updated
+**Unified-page ingest context for refresh:** derive companion context from the existing source page's `raw_files:` list — locate the entry beginning with `../../raw/github/`, strip the prefix and `.md` suffix to get `companion_slug`, and use the path as `companion_raw_file_path`. The primary `raw_file_path` is the `../../raw/web/...` entry, normalized to `raw/web/<domain>.md`. Pass `companion_slug` and `companion_raw_file_path` to ingest so it preserves the unified body and frontmatter.
 
-  - Updated: wiki/sources/<slug>.md, wiki/index.md, wiki/overview.md, wiki/log.md
-  - Raw: raw/<type>/<slug-file>.md
-  ```
-- Proceed to step 5.
+**Non-unified page:**
+- If content is identical → record `refresh: <slug> (no change)`.
+- If content differs → overwrite `raw_file_path`, run ingest steps 2–5 and 7. Pass `companion_slug = null` and `companion_raw_file_path = null` (refresh never promotes to unified).
+
+In either case, if content changed, append to `wiki/log.md` immediately below the heading (newest at top):
+```
+## <today> | refresh | <slug> | content updated
+
+- Updated: wiki/sources/<slug>.md, wiki/index.md, wiki/overview.md, wiki/log.md
+- Raw: <comma-separated list of changed raw paths>
+```
 
 ### 5. Update inbox line
 
