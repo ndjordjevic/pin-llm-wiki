@@ -63,6 +63,7 @@ Extract:
 | Pattern | Type |
 |---|---|
 | `github.com/<org>/<repo>` — exactly two non-empty path segments | `github` |
+| `github.com/<org>/<repo>/<...>` — any additional path segments (for example `/tree/...`, `/blob/...`, `/issues/...`) | `web` |
 | `youtube.com/watch?v=` or `youtu.be/<id>` | `youtube` |
 | anything else | `web` |
 
@@ -72,7 +73,8 @@ Same rules as `add`:
 
 - **GitHub:** slug = `<org>-<repo>`, raw path = `raw/github/<org>-<repo>.md`
 - **YouTube:** video ID from URL; title slug finalized after fetch step 1 (requires `yt-dlp --dump-json` output); full slug = `<video-id>-<title-slug>`; raw path = `raw/youtube/<video-id>-<title-slug>.md`
-- **Web:** slug = hostname with `www.` stripped (preserve subdomains); raw path = `raw/web/<domain>.md`
+- **Web:** slug = hostname with `www.` stripped (preserve subdomains); raw path = `raw/web/<slug>.md`
+- **GitHub non-root page special case:** if the URL is `github.com/<org>/<repo>/<...>`, derive the web slug as `<org>-<repo>-<path-slug>`, where `<path-slug>` is the remaining path joined with hyphens and normalized to kebab-case. Example: `https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking` → `modelcontextprotocol-servers-tree-main-src-sequentialthinking`
 
 ### 6. Fetch
 
@@ -82,6 +84,8 @@ Read the protocol file for the detected type and follow it exactly:
 - Web → `<skill-dir>/templates/protocols/web.md`
 
 Apply `<!-- branch:X -->` and `<!-- clone -->` tags (GitHub only). Use the effective detail level.
+
+**GitHub non-root page special case:** when the detected type is `web` because the URL is `github.com/<org>/<repo>/<...>`, treat it as a **single-page web capture**. Fetch only the exact URL. Skip `llms.txt`, docs discovery, and companion GitHub discovery regardless of detail level.
 
 **Fetch failure handling:**
 

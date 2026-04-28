@@ -26,6 +26,7 @@ Match the URL (in order):
 | Pattern | Type |
 |---|---|
 | `github.com/<org>/<repo>` — exactly two non-empty path segments | `github` |
+| `github.com/<org>/<repo>/<...>` — any additional path segments (for example `/tree/...`, `/blob/...`, `/issues/...`) | `web` |
 | `youtube.com/watch?v=` or `youtu.be/<id>` | `youtube` |
 | anything else | `web` |
 
@@ -79,8 +80,9 @@ Derive slug and raw file path (except YouTube — finalized after fetch; see bel
 
 **Web:**
 - Domain: extract hostname from URL, strip `www.` prefix. Preserve subdomains (e.g. `docs.langchain.com` stays as `docs.langchain.com` — do not collapse to `langchain.com`).
-- Slug: the domain string
-- Raw path: `raw/web/<domain>.md` (brief/standard) or `raw/web/<domain>/` (deep)
+- **Default slug:** the domain string
+- **GitHub non-root page special case:** if the URL is `github.com/<org>/<repo>/<...>`, derive the slug as `<org>-<repo>-<path-slug>`, where `<path-slug>` is the remaining path joined with hyphens and normalized to kebab-case. Example: `https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking` → `modelcontextprotocol-servers-tree-main-src-sequentialthinking`
+- Raw path: `raw/web/<slug>.md` (brief/standard) or `raw/web/<slug>/` (deep)
 
 ---
 
@@ -93,6 +95,8 @@ Read the protocol file for the detected type and follow it exactly:
 - **Web:** read `<skill-dir>/templates/protocols/web.md`
 
 Use the effective detail level throughout. Apply `<!-- branch:X -->` and `<!-- clone -->` tags (GitHub only).
+
+**GitHub non-root page special case:** when the detected type is `web` because the URL is `github.com/<org>/<repo>/<...>`, treat it as a **single-page web capture**. Fetch only the exact URL. Skip `llms.txt`, docs discovery, and companion GitHub discovery regardless of detail level.
 
 **Fetch failure handling:**
 

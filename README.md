@@ -35,7 +35,9 @@ Runs a short interview (domain, detail level, source types, git settings), then 
 
 Fetches, ingests, and writes `wiki/sources/<slug>.md`. Updates index, overview, log, and inbox in one shot.
 
-For **web sources**, the skill automatically discovers the product's GitHub repo from the page content and fetches it as a companion. The result is a single unified source page (`wiki/sources/<domain>.md`) that covers the product website and the GitHub repo together — one inbox entry, one source page. Use `<!-- no-companion -->` to suppress this or `<!-- companion:github.com/<org>/<repo> -->` to override the discovered repo.
+For **web sources**, the skill automatically discovers the product's GitHub repo from the page content and fetches it as a companion. The result is a single unified source page (`wiki/sources/<slug>.md`) that covers the product website and the GitHub repo together — one inbox entry, one source page. Use `<!-- no-companion -->` to suppress this or `<!-- companion:github.com/<org>/<repo> -->` to override the discovered repo.
+
+**GitHub non-root pages are treated differently.** A URL like `https://github.com/org/repo/tree/main/path` is treated as a **single-page web source**, not a repo ingest. The skill captures only that exact page, skips docs discovery and companion-repo discovery, and writes a page-scoped web raw file such as `raw/web/org-repo-tree-main-path.md`.
 
 ### Process pending inbox items
 
@@ -118,4 +120,4 @@ raw/
 |---|---|---|
 | GitHub | `gh` CLI | `raw/github/<org>-<repo>.md` |
 | YouTube | `yt-dlp` | `raw/youtube/<video-id>-<slug>.md` |
-| Web | `WebFetch` | `raw/web/<domain>.md` |
+| Web | `WebFetch` | `raw/web/<slug>.md` |

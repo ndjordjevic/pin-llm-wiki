@@ -32,6 +32,8 @@ inbox.md            ← drop new URLs here
 /pin-llm-wiki run <url>        # process only this one URL from Pending
 ```
 
+**GitHub non-root pages are treated as single-page web sources.** A URL like `https://github.com/org/repo/tree/main/path` is ingested as the exact page only, with no docs discovery and no companion-repo discovery.
+
 ## Inline inbox tags
 
 Append these (as HTML comments) to any URL line in `inbox.md`:
