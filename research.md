@@ -187,22 +187,21 @@ wiki/
   log.md            -- append-only operations log
   overview.md       -- living synthesis
   sources/          -- one page per ingested source
-  topics/           -- cross-source articles (LLM-organized)
   syntheses/        -- filed query answers worth keeping
 ```
 
-A single `topics/` folder holds all cross-source articles, organized by tag. (Simplified from rp6502-kb's fixed `entities/` + `concepts/` split — the line is fuzzy for most domains.)
+A single `syntheses/` folder holds cross-source articles worth keeping.
 
 ### Page frontmatter
 
 ```yaml
 ---
-type: source | topic | synthesis
+type: source | synthesis
 tags: [tag1, tag2]
 related:
   - "[[page]]"
   - "[[other-page]]"
-sources:          # topic/synthesis pages only — see rule below
+sources:          # synthesis pages only — see rule below
   - "[[source-page]]"
 detail_level: brief | standard | deep
 created: YYYY-MM-DD
@@ -212,22 +211,21 @@ updated: YYYY-MM-DD
 
 **Frontmatter rules (validated in manual pass):**
 
-- `sources:` is **only for topic and synthesis pages** — it lists the source pages they draw from. Source pages themselves MUST NOT include `sources:` (they *are* the source; self-reference is meaningless). A source page with `sources: [[self]]` was the most common bug in the first ingest run.
-- `related:` is for cross-references between wiki pages (topic ↔ topic, source ↔ source). Empty list (`related: []`) is valid when no cross-links exist yet. Resolved at lint time, not ingest time.
+- `sources:` is **only for synthesis pages** — it lists the source pages they draw from. Source pages themselves MUST NOT include `sources:` (they *are* the source; self-reference is meaningless). A source page with `sources: [[self]]` was the most common bug in the first ingest run.
+- `related:` is for cross-references between wiki pages (synthesis ↔ synthesis, source ↔ source). Empty list (`related: []`) is valid when no cross-links exist yet. Resolved at lint time, not ingest time.
 - Obsidian-compatible wikilinks must be quoted list items (`- "[[page]]"`), not inline bracket arrays.
 
 ### Citation rules
 
 **Paths:**
-- Wiki-to-raw links use **relative-from-file paths**, not root-relative. From `wiki/sources/<slug>.md` that's `../../raw/...`; from `wiki/topics/<slug>.md` same. Root-relative breaks in Obsidian and standard markdown renderers.
+- Wiki-to-raw links use **relative-from-file paths**, not root-relative. From `wiki/sources/<slug>.md` that's `../../raw/...`; from `wiki/syntheses/<slug>.md` use `../raw/...`. Root-relative breaks in Obsidian and standard markdown renderers.
 
 **Banner vs per-sentence:**
 - **Single-source pages** (page draws all claims from one raw file): one banner at the top — `_All claims below are sourced from [../../raw/.../file.md](../../raw/.../file.md) unless otherwise noted._` No per-sentence citations. Validated: per-sentence citations on a single-source page are pure noise.
-- **Multi-source pages** (topic pages, or source pages that incorporate a second raw file): keep the banner for the primary source; add per-paragraph citations `([raw/path](../../raw/path))` only where a *different* raw file supplies the claim.
+- **Multi-source pages** (synthesis pages, or source pages that incorporate a second raw file): keep the banner for the primary source; add per-paragraph citations only where a *different* raw file supplies the claim.
 
 **Citation layering (validated):**
 - Source pages cite *raw files* (via banner or per-paragraph).
-- Topic pages cite *raw files* where claims originate.
 - Overview / synthesis pages cite *`[[source page]]` wikilinks* — they synthesize across sources, not from raw directly. Each layer cites the layer below it.
 
 **Enforcement:** the linter rejects any factual claim without a citation chain reaching a raw file.
@@ -291,7 +289,7 @@ Generalized from rp6502-kb AGENTS.md:
 
 1. Read relevant `raw/` files for the target source.
 2. Create/update `wiki/sources/<slug>.md` with summary + citations + frontmatter.
-3. Extract key facts → create or update relevant `wiki/topics/` pages.
+3. Extract key facts → create or update `wiki/sources/`, `wiki/overview.md`, and any deliberate `wiki/syntheses/` pages.
 4. Update `wiki/index.md` (add new pages with one-line descriptions).
 5. Update `wiki/overview.md` if the synthesis shifts.
 6. Append to `wiki/log.md`: `## [YYYY-MM-DD] ingest | <source> | <what changed>`.
@@ -326,7 +324,7 @@ Generalized from rp6502-kb AGENTS.md:
 - Notable quotes or code shown
 - Context (speaker, series, date)
 
-### Merge/update rules (when a topic page already exists)
+### Merge/update rules (when a synthesis page already exists)
 
 - Add new facts; do not duplicate.
 - If new source contradicts existing claim → add `> **Conflict:*`* block citing both sources; do not silently overwrite.
@@ -347,22 +345,22 @@ Lint checks:
 1. **Citation coverage** — every factual sentence in every page has a citation chain to a raw file. Load-bearing.
 2. **Contradictions** — pages with conflicting claims. Rank by source authority.
 3. **Orphans** — pages with no inbound `[[wikilinks]]`. **Includes structural pages** (`overview.md`, `log.md`) — manual pass confirmed these get missed if not in the `index.md` scaffold; the generated `index.md` must link to them.
-4. **Data gaps** — concepts mentioned but lacking a topic page. When ≥2 sources discuss the same concept, lint suggests a topic page.
+4. **Data gaps** — cross-source concepts mentioned in `overview.md` but not yet promoted to a synthesis page.
 5. **Missing cross-references** — pages that mention other wiki-known entities without linking. Manual pass found 2 of 3 source pages had empty `related:` — resolving cross-refs is a lint-time responsibility, not ingest-time.
 6. **Stale sources** — sources last refreshed > **30 days** ago (configurable default). Fast-moving projects may need a shorter threshold; evergreen docs a longer one.
-7. **Terminology collisions** — same term used for different concepts across sources (manual pass found "skills" in Superpowers vs DeepAgents). Flag for disambiguation via a topic page or a note on both source pages.
+7. **Terminology collisions** — same term used for different concepts across sources (manual pass found "skills" in Superpowers vs DeepAgents). Flag for disambiguation via a synthesis page or a note on both source pages.
 
 Lint reports findings; it doesn't auto-fix. Fixes are a separate user-driven pass — with two exceptions considered for auto-fix:
 - Add `overview.md` / `log.md` links to `index.md` if missing (structural, no judgment needed).
-- Create topic page *stubs* for concepts with ≥2-source coverage (scaffold only; human fills content).
+- Report candidate synthesis pages when a repeated cross-source concept deserves its own page.
 
-### Topic-page creation timing (validated)
+### Synthesis-page creation timing (validated)
 
-Topic pages are created **at lint time**, not ingest time. Ingest creates source pages only. Topic pages require cross-source evidence — creating them from a single source produces stubs that rot. The manual pass confirmed this: after 3 sources ingested, 3 topic pages were ready to create (tool access scoping, human-in-the-loop, layered architecture), each with 3-source coverage.
+Synthesis pages are **manual**, not ingest-time artifacts. Ingest creates source pages only. Cross-source syntheses require enough evidence and editorial judgment to justify their own page.
 
 ### Agent-consumption harvest (new workflow)
 
-When a fresh agent session produces a synthesis insight better than what's in the wiki — e.g., a comparison table that the overview lacks — that insight is a candidate to write back into a topic page. The manual pass Step 5 demonstrated this: the agent's answer to a cross-source question was more precise than `overview.md`'s treatment of the same topic. Harvest is a manual step for MVP; formalize as a command (`/pin-llm-wiki harvest`) in a later phase.
+When a fresh agent session produces a synthesis insight better than what's in the wiki — e.g., a comparison table that the overview lacks — that insight is a candidate to write back into a synthesis page. The manual pass Step 5 demonstrated this: the agent's answer to a cross-source question was more precise than `overview.md`'s treatment of the same subject. Harvest is a manual step for MVP; formalize as a command (`/pin-llm-wiki harvest`) in a later phase.
 
 ---
 
@@ -400,7 +398,6 @@ Answers → written to `.pin-llm-wiki.yml` and baked into generated `CLAUDE.md` 
     log.md
     overview.md
     sources/
-    topics/
     syntheses/
 ```
 
@@ -447,7 +444,7 @@ Without this, the wiki is just files on disk. With it, the wiki becomes the codi
   - Runs a single lint pass at the end
   - Commits (if enabled)
 2. Review in Obsidian or preferred markdown viewer.
-3. Ask the coding agent a question — it reads `wiki/index.md`, drills into topics, cites pages.
+3. Ask the coding agent a question — it reads `wiki/index.md`, drills into source pages and syntheses, cites pages.
 
 **Time budget:** ~2 minutes of human time (write inbox, kick off run, review). LLM time: minutes to hours depending on detail level and source count. LLM cost: $1–$50 depending on detail level (init interview surfaces this up front).
 
@@ -458,7 +455,7 @@ Without this, the wiki is just files on disk. With it, the wiki becomes the codi
 ### Adding sources
 
 - Drop URL in `inbox.md` → `/pin-llm-wiki add` or `/pin-llm-wiki run`.
-- Agent merges into existing topic pages; doesn't duplicate.
+- Agent merges into existing synthesis pages when they exist; doesn't duplicate.
 
 ### Refreshing sources
 
@@ -600,7 +597,7 @@ Three sources ingested by hand into `agentic-ai-wiki/`: obra/superpowers (GitHub
 - **Citations-first works.** Banner + per-paragraph model produced zero hallucinations across 3 sources and 1 agent-consumption test.
 - **Wiki-for-agents works.** A fresh Claude Code session, given only `CLAUDE.md` + `wiki/`, produced a cited, synthesized, cross-source answer with no training-data contamination. Principle #5 (wiki is for both humans and agents) validated at 3-source scale.
 - **One compiled raw file per source** is the right granularity at brief/standard. Per-page files only at deep.
-- **Defer topic pages to lint time.** Ingest creates source pages only. Pre-3-source topic stubs are waste.
+- **Keep synthesis pages manual.** Ingest creates source pages only. Cross-source synthesis pages should be created only when they add durable value.
 
 ### Dismissed risks (move out of §14 concern list)
 
@@ -621,7 +618,7 @@ Three sources ingested by hand into `agentic-ai-wiki/`: obra/superpowers (GitHub
 
 ### Still open for PRD to decide
 
-- Should lint auto-create topic stubs, or only report? (Leaning: stub creation is safe to automate.)
+- Should lint stay purely report-only, or ever auto-propose synthesis candidates in a structured way?
 - Citation semantics for synthesis/overview pages — confirmed `[[source pages]]` is right, but `overview.md` currently has no citations at all. Should this be enforced?
 - Deep-detail raw layout — flat compiled file vs per-page directory.
 - Formal harvest command (`/pin-llm-wiki harvest`) — MVP or Phase 2?
@@ -631,4 +628,3 @@ Three sources ingested by hand into `agentic-ai-wiki/`: obra/superpowers (GitHub
 Full 3-source pass at standard depth: ~98k combined input/output tokens. Well under the 200k guard rail. At current API rates: roughly $0.50–$1.50 per full pass. Init interview cost estimates can be confident for brief/standard; deep still open.
 
 ---
-

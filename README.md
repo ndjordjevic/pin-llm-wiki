@@ -60,6 +60,7 @@ Append these (as HTML comments) to any URL line:
 | `skip` | Skip this URL on the next run |
 | `companion:github.com/<org>/<repo>` | Web: skip GitHub discovery, use this repo as the companion |
 | `no-companion` | Web: suppress companion GitHub fetch even if a repo is found |
+| `note: text` | Freeform note for human review (queue only; ignored by ingest) |
 
 Example:
 ```
@@ -88,7 +89,7 @@ Adds the URL to `inbox.md`'s `## Pending` section without fetching or ingesting.
 /pin-llm-wiki remove <slug>
 ```
 
-Soft-deletes to `wiki/.archive/`. Runs lint to surface orphaned wikilinks.
+Soft-deletes to `wiki/.archive/`. Reports dangling references so you can fix them, then run lint for full wiki validation.
 
 ### Refresh a source
 
@@ -104,8 +105,6 @@ wiki/
   overview.md         rolling synthesis
   log.md              append-only history
   sources/            one page per ingested source
-  topics/             cross-source concept pages (created at lint time)
-  syntheses/          deep-dive documents (manual)
   .archive/           soft-deleted sources
 raw/
   github/             immutable GitHub repo captures

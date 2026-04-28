@@ -8,10 +8,8 @@ Every source is fetched, summarized, and cross-referenced so you (and any AI age
 
 ```
 wiki/index.md       ← start here — full source list
-wiki/overview.md    ← rolling synthesis across all sources
+wiki/overview.md    ← rolling cross-source overview
 wiki/sources/       ← one page per ingested source
-wiki/topics/        ← cross-source concept pages
-wiki/syntheses/     ← deep-dive documents
 raw/                ← immutable source captures (do not edit)
 inbox.md            ← drop new URLs here
 ```
@@ -30,7 +28,8 @@ inbox.md            ← drop new URLs here
 
 **Batch-process everything pending** in `inbox.md`:
 ```
-/pin-llm-wiki run
+/pin-llm-wiki run              # process all pending items
+/pin-llm-wiki run <url>        # process only this one URL from Pending
 ```
 
 ## Inline inbox tags
@@ -49,7 +48,7 @@ Append these (as HTML comments) to any URL line in `inbox.md`:
 
 ## Querying the wiki
 
-Open `wiki/index.md` for a full table of sources. Follow `[[wikilinks]]` to source pages, topic pages, and syntheses.
+Open `wiki/index.md` for a full table of sources. Follow `[[wikilinks]]` to source pages.
 
 AI agents in this repo are instructed to consult the wiki before answering — see `AGENTS.md`.
 

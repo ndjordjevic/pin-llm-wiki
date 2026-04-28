@@ -101,7 +101,7 @@ Write the updated file.
 
 ## Step 8 — Scan for dangling references
 
-Scan every wiki page in `wiki/sources/`, `wiki/topics/`, `wiki/syntheses/`, `wiki/overview.md`, `wiki/log.md` for:
+Scan every wiki page in `wiki/sources/`, `wiki/overview.md`, `wiki/log.md` for:
 
 1. **Broken wikilinks** — `[[<slug>]]` anywhere in body or frontmatter of a surviving page.
 2. **Broken raw citations** — any path containing `<slug>` pointing into `raw/<type>/` (e.g. `../../raw/github/<slug>.md` or `../raw/<type>/<slug>.md`).
@@ -133,6 +133,6 @@ Dangling references found (<N>):
 [No dangling references found.]   ← if none
 ```
 
-Fix dangling references manually (update or remove the wikilinks and citations in the listed pages), then run `/pin-llm-wiki lint` to verify the wiki is clean.
+Fix dangling references manually (update or remove the wikilinks and citations in the listed pages), then run `/pin-llm-wiki lint` for full wiki validation.
 
 **To undo:** files are in `wiki/.archive/`. Move them back to their original paths, restore the index.md row, re-add the overview.md frontmatter entry and body paragraph, and revert the log entry manually.

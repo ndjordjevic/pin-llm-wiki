@@ -46,7 +46,7 @@ The human's job shrinks to **drop URLs → review output**. Everything else is a
 - `/pin-llm-wiki init` — conversational interview produces a working, scaffolded wiki repo.
 - `/pin-llm-wiki add <url>` — append URL to `inbox.md` if absent, then one-shot fetch + ingest for that URL (§4.2).
 - `/pin-llm-wiki run` — batch process all pending inbox URLs.
-- `/pin-llm-wiki lint` — structured lint report plus §4.5 auto-fixes (index links, Check #4 topic stubs); no `--fix` flag.
+- `/pin-llm-wiki lint` — structured lint report plus §4.5 auto-fixes (index links, adapter sync); no `--fix` flag.
 - `/pin-llm-wiki remove <slug>` — soft-delete a source (archive raw + wiki page by default), then lint for orphaned links/citations (§4.8).
 - Three source types supported at ship: `github`, `youtube`, `web`.
 - Three detail levels: `brief` / `standard` / `deep` (locked at init).
@@ -62,7 +62,7 @@ The human's job shrinks to **drop URLs → review output**. Everything else is a
 - Multi-user / team collaboration.
 - Auth-gated sources (internal docs behind SSO).
 - Budget / cost-cap enforcement.
-- Automatic topic-page *content* generation (stub creation only).
+- Automatic synthesis-page *content* generation.
 - Formal `/pin-llm-wiki harvest` command (manual for now).
 - Multi-LLM backend (Claude-only for MVP; abstract later).
 
@@ -129,7 +129,6 @@ A small team (≤5) sharing a domain-focused wiki via git — same repo, same sk
     log.md
     overview.md
     sources/
-    topics/
     syntheses/
 ```
 
@@ -235,24 +234,19 @@ stale_threshold_days: 30    # configurable per §4.5 lint check
 | 1 | Citation coverage — every factual claim has a chain to a raw file; on `wiki/overview.md`, `[[source page]]` wikilinks count as the chain (see §5.4) | ERROR or WARN† |
 | 2 | Contradictions — conflicting claims across pages; rank by source authority | WARN |
 | 3 | Orphans — pages with no inbound `[[wikilinks]]`; **includes `overview.md` and `log.md`** | WARN |
-| 4 | Data gaps — concepts named in ≥`topic_min_products` (default 3) distinct *products* with no topic page | INFO (suggests topic creation) |
-| 5 | Missing cross-references — page mentions a wiki-known entity without linking; empty `related:` when cross-refs are warranted | WARN |
-| 6 | Stale sources — last refresh > `stale_threshold_days` (default 30) | INFO |
-| 7 | Terminology collisions — same term used for different concepts across sources (e.g. "skills" in Superpowers vs DeepAgents) | WARN |
-| 8 | Frontmatter shape — source pages must NOT include `sources:`; topic/synthesis pages may | ERROR |
-| 9 | Citation path format — wiki-to-raw links must be relative-from-file (`../../raw/...` from `wiki/sources/`) | ERROR |
-| 11 | Adapter sync — `.cursor/rules/wiki-instructions.mdc` body and `.github/copilot-instructions.md` must match `AGENTS.md` | WARN (auto-fixed) |
+| 4 | Missing cross-references — page mentions a wiki-known entity without linking; empty `related:` when cross-refs are warranted | WARN |
+| 5 | Stale sources — last refresh > `stale_threshold_days` (default 30) | INFO |
+| 6 | Terminology collisions — same term used for different concepts across sources (e.g. "skills" in Superpowers vs DeepAgents) | WARN |
+| 7 | Frontmatter shape — source pages must NOT include `sources:`; synthesis pages may | ERROR |
+| 8 | Citation path format — wiki-to-raw links must be relative-from-file (`../../raw/...` from `wiki/sources/`) | ERROR |
+| 10 | Adapter sync — `.cursor/rules/wiki-instructions.mdc` body and `.github/copilot-instructions.md` must match `AGENTS.md` | WARN (auto-fixed) |
 
-† **Check #1 severity:** **WARN** on `wiki/overview.md` only; **ERROR** on `wiki/sources/*`, `wiki/topics/*`, and other wiki pages.
+† **Check #1 severity:** **WARN** on `wiki/overview.md` only; **ERROR** on `wiki/sources/*`, `wiki/syntheses/*`, and other wiki pages.
 
 **Output:** structured report (counts by severity, list of findings with file:line references). **Auto-fix on every lint** (no `--fix` flag; Phase 1 is always this behavior):
 
 - **Auto-fix:** missing `overview.md` / `log.md` links in `index.md` scaffold.
 - **Auto-fix:** re-sync `.cursor/rules/wiki-instructions.mdc` and `.github/copilot-instructions.md` from `AGENTS.md` when drift is detected (Check #11). Preserves the Cursor file's existing YAML frontmatter.
-
-Topic candidates from Check #4 are **report-only by default** (`topic_creation: report`). The legacy `auto-stub` mode is preserved as an opt-in config but not recommended — empty stubs add navigation cost without information value. Promote candidates via the manual harvest flow.
-
-**Source independence:** Check #4 counts distinct products, not distinct sources. Sources sharing a `product:` frontmatter value (resolved at ingest time — see §4.6 Step 2b) count as one product, so a feature shared between e.g. a marketing site and its own GitHub repo does not falsely trigger a topic candidate.
 
 All other checks are report-only.
 
@@ -272,7 +266,7 @@ All other checks are report-only.
      - **GitHub:** what it does, installation, key features, architecture, example usage, maintenance status.
      - **YouTube:** what the video is about (1 paragraph — "replace watching" bar), key points by chapter, notable quotes, speaker context.
      - **Web/product:** what it does, key features, architecture/concepts, main APIs, when to use, ecosystem.
-3. **Do not create topic pages.** Topic creation is a lint-time action — see §4.5 check #4.
+3. **Do not create synthesis pages automatically.** Cross-source synthesis remains a manual curation step.
 4. Update `wiki/index.md`: add source row, increment count.
 5. Update `wiki/overview.md`: extend the current synthesis to reflect the new source. Overview cites `[[source pages]]`, not raw files.
 6. Append to `wiki/log.md`: `## [YYYY-MM-DD] ingest | <source> | <one-line summary>` followed by bullet list of files touched.
@@ -280,7 +274,7 @@ All other checks are report-only.
 8. Move inbox line: `## Pending` → `## Completed`, append `<!-- ingested YYYY-MM-DD -->`. If `auto_mark_complete: true` (default), also flip `[ ]` → `[x]`; otherwise leave unchecked.
 9. **No agent `git commit`** — see generated `AGENTS.md` **Git — never auto-commit**.
 
-**Merge rules (when updating an existing topic page, created by a prior lint run):**
+**Merge rules (when updating an existing synthesis page):**
 
 - Add new facts; do not duplicate.
 - Conflict: insert a `> **Conflict:**` block citing both sources. Do not silently overwrite. Source authority: official docs > GitHub README > YouTube (official channel) > blogs / secondary.
@@ -299,7 +293,7 @@ Before answering any question about this wiki's domain, you MUST:
 4. If the answer is not in the wiki, say so clearly — do not infer from training data.
 ```
 
-Plus the full protocol for each source type the user selected (GitHub / YouTube / Web fetch protocols from §4.4, ingest workflow from §4.6, citation rules, frontmatter rules). **Manual harvest (no `/harvest` command in MVP):** a short subsection describing how to promote a high-value agent answer into a `wiki/topics/` stub (or synthesis page): required frontmatter, banner citations to `[[source pages]]`, and when to run `lint`. Formal `/pin-llm-wiki harvest` stays deferred per §2 non-goals.
+Plus the full protocol for each source type the user selected (GitHub / YouTube / Web fetch protocols from §4.4, ingest workflow from §4.6, citation rules, frontmatter rules). **Manual harvest (no `/harvest` command in MVP):** a short subsection describing how to promote a high-value agent answer into a `wiki/syntheses/` page: required frontmatter, citations to `[[source pages]]`, and when to run `lint`. Formal `/pin-llm-wiki harvest` stays deferred per §2 non-goals.
 
 The `agentic-ai-wiki/CLAUDE.md` at the end of the manual pass is the reference implementation.
 
@@ -307,8 +301,8 @@ The `agentic-ai-wiki/CLAUDE.md` at the end of the manual pass is the reference i
 
 `/pin-llm-wiki remove <slug>`:
 1. Soft-delete by default: move `raw/<type>/<slug>*` and `wiki/sources/<slug>.md` to `wiki/.archive/` (configurable).
-2. Run lint immediately: flag orphaned `[[wikilinks]]` and sentences citing the removed raw file.
-3. Report to user; do not auto-rewrite.
+2. Scan surviving pages for dangling `[[wikilinks]]` and citations to the removed raw file; report findings to the user.
+3. Run lint afterward for full wiki validation; do not auto-rewrite.
 
 ### 4.9 Refresh
 
@@ -348,14 +342,12 @@ Human adds the tag to a previously-ingested line under `## Completed` (typically
 - Raw at **deep:** `raw/web/<domain>/<page-slug>.md` per crawled page; GitHub may use a full clone tree under `raw/github/<org>-<repo>/` when `<!-- clone -->` is set; YouTube stays one markdown file per video.
 - Raw README per type: `raw/<type>/README.md` table with `File | Source | Fetched | Notes` (github adds `Stars`).
 - Wiki source pages: `wiki/sources/<slug>.md`.
-- Wiki topic pages: `wiki/topics/<slug>.md` (created at lint time).
 - Wiki synthesis pages: `wiki/syntheses/<slug>.md` (manual, user-driven).
 
 ### 5.4 Citation & frontmatter rules (validated, enforced by lint)
 
 - Source pages: no `sources:` frontmatter; banner citation from a single raw file; per-paragraph citations only when a second raw file is incorporated.
-- Topic pages: `sources:` lists contributing source pages as wikilinks; inline citations to raw files.
-- Synthesis / overview pages: cite `[[source pages]]`, not raw files directly. **`overview.md` enforcement:** synthesis must be backed by `[[source page]]` wikilinks (Lint Check #1 — **WARN** on this file only).
+- Synthesis / overview pages: `sources:` lists contributing source pages as wikilinks; inline citations point to raw files when needed. **`overview.md` enforcement:** synthesis must be backed by `[[source page]]` wikilinks (Lint Check #1 — **WARN** on this file only).
 - Paths: always relative-from-file (`../../raw/...` from `wiki/sources/`).
 - Obsidian compatibility: list-form wikilinks (`- "[[page]]"`), not inline bracket arrays.
 
@@ -424,7 +416,7 @@ Manual spot-check on 10 random factual claims across a 3-source test wiki: every
 
 Audit trail; normative detail lives in the cited sections.
 
-1. **Lint auto-fix:** On every `lint` / end of `run` (when `auto_lint: batch`), apply §4.5 auto-fixes (index scaffold links + Check #4 topic stubs). No `--fix` flag.
+1. **Lint auto-fix:** On every `lint` / end of `run` (when `auto_lint: batch`), apply §4.5 auto-fixes (index scaffold links + adapter sync). No `--fix` flag.
 2. **`overview.md` citations:** Check #1 — `[[source page]]` wikilinks satisfy the citation chain; gaps on `wiki/overview.md` are **WARN**, elsewhere **ERROR** (§4.5, §5.4).
 3. **Raw layout by detail level:** `brief`/`standard` — single compiled raw files per §4.4 / §5.3; `deep` — per-page web tree, optional GitHub clone, one file per YouTube video (§4.4, §5.3).
 4. **Harvest:** No `/pin-llm-wiki harvest` subcommand in MVP (§2 non-goals). Generated `CLAUDE.md` documents **manual harvest** (§4.7).

@@ -17,7 +17,7 @@ Before anything else:
 
 Conduct a 6-question interview, **one question at a time**. Present each question, wait for the answer, then proceed to the next. Do not batch questions.
 
-Use `AskUserQuestion` if available (run `ToolSearch` with `query: "select:AskUserQuestion"` first to load its schema). If `AskUserQuestion` is not available, print each question clearly and wait for a user reply before continuing.
+Use the environment's dedicated user-question tool if available (for example, Copilot's `ask_user`). If no such tool is available, print each question clearly and wait for a user reply before continuing.
 
 ---
 
@@ -145,8 +145,6 @@ Create these directories (use `mkdir -p` or equivalent, all at once):
 Always:
 - `raw/assets/`
 - `wiki/sources/`
-- `wiki/topics/`
-- `wiki/syntheses/`
 - `wiki/.archive/`
 - `.cursor/rules/`
 
@@ -204,8 +202,6 @@ Write to `wiki/log.md`.
 
 Create empty placeholder files to preserve empty directories in git:
 - `wiki/sources/.gitkeep`
-- `wiki/topics/.gitkeep`
-- `wiki/syntheses/.gitkeep`
 - `wiki/.archive/.gitkeep`
 
 ### Step 6a — Wiki README
@@ -280,7 +276,7 @@ Wiki scaffolded in <current directory>.
   raw/                                        immutable source captures (written by fetch)
   wiki/                                       knowledge base (written by ingest)
     index.md                                  start here
-    overview.md                               rolling synthesis
+    overview.md                               rolling cross-source overview
     log.md                                    append-only history
 
 Next: /pin-llm-wiki add <url>

@@ -12,11 +12,11 @@ By the end of this pass, we should be able to answer:
 
 1. **Fetching per type** — does `WebFetch` work for a docs site, or do we need Jina Reader / Firecrawl / headless browser?
 2. **Citation discipline** — can the ingest agent actually cite every claim back to a specific raw file? How does it fail?
-3. **Topics structure** — does the single `topics/` folder stay coherent across three diverse sources, or do pages blur into each other?
+3. **Syntheses structure** — when should a cross-source synthesis page exist at all, and does that stay coherent across three diverse sources?
 4. **Wiki pages per source** — what does `standard` detail actually produce? Is the per-type template (landing page replacer for web, README-based for github, "replace watching" for youtube) the right shape?
 5. **Token cost** — what does a real `standard` ingest cost in tokens / dollars for each source type?
 6. **Idempotency** — if we crash partway, can we resume cleanly?
-7. **Merge behavior** — when source 2 adds to a topic created by source 1, does it extend cleanly or duplicate?
+7. **Merge behavior** — when source 2 strengthens a cross-source synthesis started after source 1, does it extend cleanly or duplicate?
 8. **CLAUDE.md-as-agent-instruction** — after ingest, if we ask a fresh Claude Code session a question, does it actually follow the CLAUDE.md and read `wiki/index.md` first?
 
 ---
@@ -59,7 +59,6 @@ Three deliberately diverse sources — one per core type we care about for MVP:
      log.md
      overview.md
      sources/
-     topics/
      syntheses/
    ```
 4. Pre-install: verify `yt-dlp` is available for the YouTube step.
@@ -94,7 +93,7 @@ Start here because GitHub is the most predictable fetch.
 
 **Ingest:**
 - Create `wiki/sources/superpowers.md` — summary + citations pointing into `raw/github/obra-superpowers.md`.
-- Identify 1–3 topic-worthy concepts → create `wiki/topics/<slug>.md` pages.
+- Identify 1–3 synthesis-worthy cross-source concepts for later manual promotion to `wiki/syntheses/<slug>.md`.
 - Update `wiki/index.md`, `wiki/overview.md`, append to `wiki/log.md`.
 - Mark `[x]` in `inbox.md`.
 
@@ -115,13 +114,13 @@ Start here because GitHub is the most predictable fetch.
 **Ingest:**
 - Create `wiki/sources/<video-slug>.md` using the "replace watching" template.
 - After reading only the wiki page, can we explain what the video was about without watching? That's the acceptance bar.
-- Update or create topics cross-referenced from source 1.
+- Update `overview.md`; note any candidate syntheses cross-referenced from source 1.
 - Update index/overview/log. Mark `[x]`.
 
 **Capture:**
 - Did yt-dlp succeed? Quality of auto-subs?
 - Fallback needed if no transcript?
-- Did merging with topics from source 1 feel clean or force duplication?
+- Did extending the cross-source synthesis feel clean or force duplication?
 
 ### Step 3 — LangChain docs site (hardest)
 
@@ -134,23 +133,23 @@ Start here because GitHub is the most predictable fetch.
 
 **Ingest:**
 - Create `wiki/sources/langchain.md` — the "landing page replacer" template.
-- Extend existing topics (agent orchestration, tool use, RAG) from sources 1 & 2 — verify merge behavior, not duplication.
+- Extend the existing cross-source synthesis (agent orchestration, tool use, RAG) from sources 1 & 2 — verify merge behavior, not duplication.
 - Update index/overview/log. Mark `[x]`.
 
 **Capture:**
 - Which fetching strategy actually worked? (This is the single most important finding.)
 - Token cost — likely the largest of the three.
-- Did topics from sources 1 & 2 grow organically or require a taxonomy shift?
+- Did the cross-source synthesis from sources 1 & 2 grow organically or require a taxonomy shift?
 
 ### Step 4 — Lint pass
 
 Manually run through the lint checks from `research.md §9`:
 
-1. Citation coverage — spot-check every factual sentence across 3 sources pages + all topic pages.
+1. Citation coverage — spot-check every factual sentence across 3 source pages + any synthesis pages.
 2. Contradictions — any?
 3. Orphans — pages with no inbound links?
-4. Data gaps — concepts mentioned but no topic page?
-5. Missing cross-references — topic page mentions another known topic without linking?
+4. Data gaps — concepts mentioned but no synthesis page?
+5. Missing cross-references — synthesis page mentions another known concept without linking?
 
 Record all findings; don't fix them yet. The PRD will decide whether the linter should auto-suggest fixes.
 
@@ -188,7 +187,7 @@ Keep `manual-pass-findings.md` structured as:
 ...
 
 ## Cross-cutting observations
-- Topics structure — did `topics/` stay coherent across sources?
+- Syntheses structure — did the decision to keep `syntheses/` manual stay coherent across sources?
 - Citation discipline — easy or hard?
 - Merging — clean or messy?
 - Idempotency — did we hit any partial-state issues?

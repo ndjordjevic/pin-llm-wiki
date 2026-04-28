@@ -129,9 +129,9 @@ After writing the source page, scan existing source pages in `wiki/sources/` (ex
 
 If a grouping is applied, also update the partner page's `product:` field in place. Report the grouping in the post-ingest confirmation so the human can verify or override (humans may set `product:` manually for cases the heuristic misses).
 
-## Step 3 — Do NOT create topic pages
+## Step 3 — Do NOT create extra cross-source pages during ingest
 
-Topic creation happens at lint time only (lint Check #4). Skip this step entirely.
+`wiki/overview.md` is the only cross-source page. Ingest writes source pages plus `wiki/overview.md` only. Skip any additional cross-source page creation.
 
 ---
 
@@ -157,10 +157,10 @@ Topic creation happens at lint time only (lint Check #4). Skip this step entirel
    - Write the updated file and stop at this step.
 
 3. **If `sources:` is empty (`sources: []`)** — this is the first source ingested:
-   - Replace the placeholder body (the `_No sources ingested yet..._` paragraph) with an opening synthesis paragraph describing what this source covers and what it contributes to understanding the domain. Cite `[[<slug>]]`.
+   - Replace the placeholder body (the `_No sources ingested yet..._` paragraph) with an opening overview paragraph describing what this source covers and what it contributes to understanding the domain. Cite `[[<slug>]]`.
    - Update `sources:` frontmatter to: `sources:\n  - "[[<slug>]]"`
 
-4. **If `sources:` already has entries but does not include this slug** — extend the existing synthesis:
+4. **If `sources:` already has entries but does not include this slug** — extend the existing overview:
    - **Append a new dedicated paragraph for this source** at the end of the body. Do not merge the new source into an existing paragraph; do not skip writing one. The paragraph should describe what this source contributes *relative to existing ones* and cite `[[<slug>]]` at least once.
    - Append `  - "[[<slug>]]"` to the `sources:` frontmatter list.
 
