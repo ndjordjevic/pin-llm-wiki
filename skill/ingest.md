@@ -103,7 +103,7 @@ _All claims below are sourced from ../../raw/web/<domain>.md unless otherwise no
 <web-sourced; banner covers>
 ```
 
-The banner cites the primary web raw file. All github-sourced paragraphs carry trailing inline citations `(../../raw/github/<org>-<repo>.md)`. Both formats satisfy lint check #9 (relative-from-file).
+The banner cites the primary web raw file. All github-sourced paragraphs carry trailing inline citations `(../../raw/github/<org>-<repo>.md)`. Both formats satisfy lint check #8 (citation path format — relative-from-file).
 
 These headings are canonical for unified pages. Do not rename, skip, or replace them with ad hoc sections like "Agent integration". Fold that material into **Architecture**, **Example usage**, or **Ecosystem** instead.
 

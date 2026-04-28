@@ -180,7 +180,7 @@ Strip from both copies any frontmatter field whose value matches `YYYY-MM-DD` or
 - `changed_raws` non-empty → overwrite each changed raw; run ingest steps 2–5 and 7 (skip 6, 8, 9) **with unified context** (see below); write refresh log entry below.
 - All unchanged → record `refresh: <slug> (no change)`.
 
-**Unified-page ingest context for refresh:** derive companion context from the existing source page's `raw_files:` list — locate the entry beginning with `../../raw/github/`, strip the prefix and `.md` suffix to get `companion_slug`, and use the path as `companion_raw_file_path`. The primary `raw_file_path` is the `../../raw/web/...` entry, normalized to `raw/web/<domain>.md`. Pass `companion_slug` and `companion_raw_file_path` to ingest so it preserves the unified body and frontmatter.
+**Unified-page ingest context for refresh:** derive companion context from the existing source page's `raw_files:` list — locate the entry beginning with `../../raw/github/`, strip the prefix and `.md` suffix to get `companion_slug`, and use the path as `companion_raw_file_path`. The primary `raw_file_path` is the `../../raw/web/...` entry from the same list, normalized to `raw/web/<slug>.md` (the leading `../../` is dropped since ingest paths are repo-relative). Pass `companion_slug` and `companion_raw_file_path` to ingest so it preserves the unified body and frontmatter.
 
 **Non-unified page:**
 - If content is identical → record `refresh: <slug> (no change)`.

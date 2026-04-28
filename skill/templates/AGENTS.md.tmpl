@@ -138,7 +138,7 @@ _All claims below are sourced from ../../raw/web/<domain>.md unless otherwise no
 <web-sourced; banner covers>
 ```
 
-The banner cites the primary web raw file. All github-sourced paragraphs carry trailing inline citations `(../../raw/github/<org>-<repo>.md)`. Both formats satisfy citation rule #9 (relative-from-file).
+The banner cites the primary web raw file. All github-sourced paragraphs carry trailing inline citations `(../../raw/github/<org>-<repo>.md)`. Both formats satisfy lint check #8 (citation path format — relative-from-file).
 
 These headings are canonical for unified pages. Do not rename, skip, or replace them with ad hoc sections like "Agent integration". Fold that material into **Architecture**, **Example usage**, or **Ecosystem** instead.
 
@@ -210,10 +210,10 @@ Skip. Do not run `git commit` for this ingest. See **Git — never auto-commit**
 1. **Every factual claim must have a citation chain to a raw file.** No citation → no claim.
 2. **Source pages** use a banner citation at the top. Add per-paragraph inline citations only when a second raw file contributes to the page.
 3. **`wiki/overview.md`** lists contributing source pages in `sources:` frontmatter and cites `[[source pages]]` via wikilinks — not raw files directly.
-5. **Citation path format:** always relative-from-file.
+4. **Citation path format:** always relative-from-file.
    - From `wiki/sources/`: `../../raw/<type>/<file>.md`
    - Never root-relative (`/raw/...` or `raw/...` without `../` prefix).
-6. **Obsidian compatibility:** wikilinks in frontmatter use list form — `- "[[slug]]"`, not inline `[[slug]]` arrays.
+5. **Obsidian compatibility:** wikilinks in frontmatter use list form — `- "[[slug]]"`, not inline `[[slug]]` arrays.
 
 ---
 
@@ -339,7 +339,7 @@ Agents (human-directed or autonomous) may suggest URLs for later ingest without 
 
 `/pin-llm-wiki remove <slug>`:
 1. Validate slug exists in `wiki/index.md` Sources table.
-2. Soft-delete: move `wiki/sources/<slug>.md` to `wiki/.archive/sources/`. For raw files, check these exact paths only — `raw/<type>/<slug>.md` (single file) and `raw/<type>/<slug>/` (deep clone directory) — and move whichever exists to `wiki/.archive/raw/<type>/` (preserving structure). Do not glob or prefix-match. Update `wiki/index.md` (remove row, decrement count) and append to `wiki/log.md`.
+2. Soft-delete: move `wiki/sources/<slug>.md` to `wiki/.archive/sources/`. For raw files: read the source page's `raw_files:` frontmatter — if present (unified page), archive every listed raw file (web + companion github); if absent, archive `raw/<type>/<slug>.md` and `raw/<type>/<slug>/` (deep clone directory) only. Move into `wiki/.archive/raw/<type>/` preserving filename. Do not glob or prefix-match. Update `wiki/index.md` (remove row, decrement count) and append to `wiki/log.md`.
 3. Update `wiki/overview.md`: remove `  - "[[<slug>]]"` from the `sources:` frontmatter list, and delete its body paragraph so the invariant `len(sources) == paragraph_count` still holds. If `[[<slug>]]` is only a passing mention inside another source's paragraph, drop the reference but leave the paragraph.
 4. Scan surviving pages for dangling `[[wikilinks]]` and raw citations that still reference `[[<slug>]]` or `raw/<type>/<slug>...`.
 5. Report findings to the user; do not auto-rewrite the surviving pages. Run `/pin-llm-wiki lint` afterward for full wiki validation.
@@ -349,7 +349,7 @@ Agents (human-directed or autonomous) may suggest URLs for later ingest without 
 
 ## Consolidating split-product sources
 
-If lint Check #12 flags a split-product wiki (separate web and github source pages share `product:`), the new ingestion flow produces a single unified page per product. To consolidate:
+If lint Check #11 flags a split-product wiki (separate web and github source pages share `product:`), the new ingestion flow produces a single unified page per product. To consolidate:
 
 1. `/pin-llm-wiki remove <github-slug>` to soft-delete the standalone github source page (raw file is archived too).
 2. Re-add the web URL with `/pin-llm-wiki run` (or queue + run). The web fetch protocol's companion-discovery step will pick up the GitHub repo automatically and the ingest will produce a unified source page citing both raw files.

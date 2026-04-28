@@ -75,7 +75,7 @@ Example:
 /pin-llm-wiki lint
 ```
 
-Runs 12 health checks (citation coverage, orphans, stale sources, frontmatter shape, split-product sources, etc.). Auto-fixes missing index links and re-syncs Cursor/Copilot adapter files.
+Runs 11 health checks (citation coverage, orphans, stale sources, frontmatter shape, split-product sources, etc.). Auto-fixes missing index links and re-syncs Cursor/Copilot adapter files.
 
 ### Queue a source (agent-friendly)
 

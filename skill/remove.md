@@ -32,13 +32,17 @@ Record the source `type` from the Sources table row (needed for raw file paths).
 
 **Source page:** `wiki/sources/<slug>.md`
 
-**Raw files:** check for these exact paths only (both may exist, either may be absent):
+**Raw files:** read the source page's frontmatter and check whether it contains a `raw_files:` list (indicating a **unified page** — usually web + companion GitHub).
+
+**Unified page** (`raw_files:` present): build the raw-file archive list from `raw_files:`. For each entry, strip the leading `../../` to convert it to a repo-relative path (e.g. `../../raw/github/foo-bar.md` → `raw/github/foo-bar.md`). Also check for a sibling deep-clone directory `raw/github/<companion-slug>/` and include it if present. Each listed file or directory must actually exist on disk to be archived; missing ones are noted in the report but do not block the rest.
+
+**Non-unified page** (no `raw_files:`): check for these exact paths only (both may exist, either may be absent):
 - Single file: `raw/<type>/<slug>.md`
 - Deep clone directory: `raw/<type>/<slug>/` (entire directory)
 
-Do not glob or prefix-match — only these two exact paths.
+Do not glob or prefix-match in either case — only the explicit paths above.
 
-If neither raw path exists: note this in the report but continue — the wiki source page may still exist.
+If no raw files resolve at all: note this in the report but continue — the wiki source page may still exist.
 
 ---
 
@@ -68,7 +72,7 @@ Do this **before** moving files, so a partial failure leaves the filesystem cons
 3. **Remove the body paragraph for this slug.** The overview body invariant is `len(sources) == paragraph_count` (one paragraph per entry in `sources:`, in the same order — see `ingest.md` Step 5).
    - Find the paragraph that primarily cites `[[<slug>]]` and delete it.
    - If `[[<slug>]]` is mentioned within a paragraph that primarily cites a different surviving source, just remove the `[[<slug>]]` reference (and any sentence solely about it) — do not delete the whole paragraph.
-4. **Invariant check before writing:** post-edit body paragraph count must equal the new `len(sources)`. If it does not, do NOT write the file — report `"overview.md paragraph count mismatch after removing [[<slug>]]. Fix manually: paragraph count must equal len(sources)."` and stop. (The slug has already been removed from `sources:` in step 2; if you bail here, the user must reconcile the body manually.)
+4. **Invariant check before writing:** post-edit body paragraph count must equal the new `len(sources)`. If it does not, do NOT write the file — report `"overview.md paragraph count mismatch after removing [[<slug>]]. Fix manually: paragraph count must equal len(sources)."` and stop. (At this point sub-step 2 has already removed the slug from `sources:` in your in-memory copy; bailing without writing means that change is dropped and the file on disk still contains the entry — the user must reconcile the body manually before re-running.)
 5. Update the `updated:` frontmatter field to `<today>`.
 6. Write the updated file.
 
@@ -76,10 +80,9 @@ Do this **before** moving files, so a partial failure leaves the filesystem cons
 
 ## Step 6 — Move files to archive
 
-Move (do not copy) each resolved file/directory to its archive destination:
+Move (do not copy) each file/directory resolved in Step 2 to its archive destination, preserving the `raw/<type>/<filename>` substructure:
 - `wiki/sources/<slug>.md` → `wiki/.archive/sources/<slug>.md`
-- `raw/<type>/<slug>.md` → `wiki/.archive/raw/<type>/<slug>.md`
-- `raw/<type>/<slug>/` → `wiki/.archive/raw/<type>/<slug>/`
+- For each resolved `raw/<type>/<file-or-dir>`: → `wiki/.archive/raw/<type>/<file-or-dir>` (create `wiki/.archive/raw/<type>/` if it does not yet exist for that type — Step 3 only created the directory for the page's own `<type>`; unified pages may add a second type).
 
 ---
 
@@ -104,7 +107,7 @@ Write the updated file.
 Scan every wiki page in `wiki/sources/`, `wiki/overview.md`, `wiki/log.md` for:
 
 1. **Broken wikilinks** — `[[<slug>]]` anywhere in body or frontmatter of a surviving page.
-2. **Broken raw citations** — any path containing `<slug>` pointing into `raw/<type>/` (e.g. `../../raw/github/<slug>.md` or `../raw/<type>/<slug>.md`).
+2. **Broken raw citations** — any path pointing into `raw/<type>/` that names one of the archived raw files (the page's own `<slug>` and, for unified pages, the companion slug derived from `raw_files:`). Catches forms like `../../raw/github/<slug>.md` and `../raw/<type>/<slug>.md`.
 
 Collect all matches as `{file, line, match}` and present them in the report below. Do not auto-fix.
 

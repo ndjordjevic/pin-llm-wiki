@@ -172,7 +172,10 @@ If the wiki is missing one of the adapter files entirely, skip — do not create
 Scan all source pages in `wiki/sources/*.md`. For each page read its `product:` and `source_url:` frontmatter fields. Build a map: `product → list of {slug, source_url}`.
 
 For each product that has **2 or more entries** in the map and whose entries all **lack a `companion_urls:` field** (i.e. none have been unified yet):
-- If the group contains **at least one web source** (source_url does NOT start with `https://github.com`) AND **at least one github source** (source_url starts with `https://github.com`):
+- Classify each entry by `source_url`:
+  - **github source** — `source_url` matches exactly `https://github.com/<org>/<repo>` (or with a trailing `/`) — i.e. a repo root with no extra path segments. GitHub non-root URLs (`/tree/...`, `/blob/...`, etc.) are web sources, not github sources, even though they live on `github.com`.
+  - **web source** — anything else.
+- If the group contains **at least one web source** AND **at least one github source**:
   → `WARN: split-product — '<product>' has separate web source page (<web-slug>) and github source page (<github-slug>); the unified ingestion flow now produces a single source page per product. To consolidate, /pin-llm-wiki remove <github-slug> and re-add the web URL with /pin-llm-wiki run (the companion fetch will pick up the GitHub repo automatically).`
 
 Severity: WARN. Not auto-fixed — consolidation is destructive; requires human action.
