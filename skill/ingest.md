@@ -164,7 +164,8 @@ If a grouping is applied, also update the partner page's `product:` field in pla
    - Update `sources:` frontmatter to: `sources:\n  - "[[<slug>]]"`
 
 4. **If `sources:` already has entries but does not include this slug** — extend the existing overview:
-   - **Append a new dedicated paragraph for this source** at the end of the body. Do not merge the new source into an existing paragraph; do not skip writing one. The paragraph should describe what this source contributes *relative to existing ones* and cite `[[<slug>]]` at least once.
+   - **Append a new dedicated paragraph for this source** at the end of the body. Do not merge the new source into an existing paragraph; do not skip writing one. The paragraph should summarize the source on its own terms and what it adds to the domain. Cite `[[<slug>]]` at least once.
+   - **Do not reference other source pages by default.** Only mention another `[[source page]]` when there is substantial conceptual overlap, a direct product relationship, or a specific conflict/comparison that genuinely helps the reader.
    - Append `  - "[[<slug>]]"` to the `sources:` frontmatter list.
 
 5. **Sanity check before writing:** the post-write paragraph count must equal `len(sources)`. If it doesn't, you've dropped or merged a paragraph — fix it.
