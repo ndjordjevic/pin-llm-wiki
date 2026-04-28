@@ -61,6 +61,7 @@ If the page **already exists** (this is an update or refresh): preserve the exis
 
 1. Summary paragraph — what this source is and why it matters for the wiki's domain.
 2. Banner citation: `_All claims below are sourced from ../../raw/<type>/<slug-file>.md unless otherwise noted._`
+   - **Unified web+github exception:** the banner always cites the primary **web** raw file only. GitHub-sourced material is cited inline at the paragraph level.
 3. Sectioned body by type:
    - **GitHub:** What it does | Installation | Key features | Architecture | Example usage | Maintenance status
    - **YouTube:** What the video is about (1 paragraph — sufficient to replace watching) | Key points by chapter | Notable quotes | Speaker context
@@ -87,7 +88,7 @@ _All claims below are sourced from ../../raw/web/<domain>.md unless otherwise no
 <github-sourced; inline-cited: (../../raw/github/<org>-<repo>.md)>
 
 ## Example usage
-<github-sourced; inline-cited: (../../raw/github/<org>-<repo>.md)>
+<github-sourced; inline-cited: (../../raw/github/<org>-<repo>.md); this section is required even if it is only one short paragraph or command block>
 
 ## When to use
 <web-sourced; banner covers>
@@ -103,6 +104,8 @@ _All claims below are sourced from ../../raw/web/<domain>.md unless otherwise no
 ```
 
 The banner cites the primary web raw file. All github-sourced paragraphs carry trailing inline citations `(../../raw/github/<org>-<repo>.md)`. Both formats satisfy lint check #9 (relative-from-file).
+
+These headings are canonical for unified pages. Do not rename, skip, or replace them with ad hoc sections like "Agent integration". Fold that material into **Architecture**, **Example usage**, or **Ecosystem** instead.
 
 **Formatting rules — apply uniformly to every source page:**
 
@@ -186,6 +189,8 @@ When `companion_slug` is non-null, extend the Updated line and add a Companion l
 - Updated: wiki/index.md, wiki/overview.md, wiki/log.md, raw/web/README.md, raw/github/README.md, inbox.md
 - Companion: raw/github/<companion_slug>.md
 ```
+
+The `- Companion:` line is required on every unified web+github ingest entry.
 
 Write the updated file.
 

@@ -50,5 +50,7 @@ Steps:
 ...
 ```
 
+`Pages: <N>` counts every captured item in the compiled raw file, including `llms.txt` when present. For example, `llms.txt + landing page + 4 docs pages` means `Pages: 6`.
+
 **README.md row format** (`raw/web/README.md`):
 `| raw/web/<domain>.md | <domain> | <pages-fetched> | <YYYY-MM-DD> | |`

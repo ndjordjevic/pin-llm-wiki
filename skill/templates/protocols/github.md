@@ -45,5 +45,10 @@ Steps:
 <annotated directory listing>
 ```
 
+Notes:
+- `## README` is the fetched README content itself, not a paraphrase, rewrite, or condensed summary.
+- `## Docs` is required whenever docs or other key repo docs were fetched during the protocol. Include the fetched content you relied on, organized one section per file/listing.
+- `## Top-level structure` should remain an annotated directory listing, but annotation must stay grounded in the fetched listing.
+
 **README.md row format** (`raw/github/README.md`):
 `| raw/github/<org>-<repo>.md | <org>/<repo> | <stars> | <default-branch> | <latest-release> | <YYYY-MM-DD> | |`
