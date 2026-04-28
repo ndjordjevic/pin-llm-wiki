@@ -11,9 +11,9 @@ Before answering **any question** about {{DOMAIN}}, you MUST:
 1. Read `wiki/index.md` to identify relevant pages.
 2. Follow `[[wikilinks]]` to drill into relevant source pages.
 3. Cite wiki page names in your answer.
-4. If the answer is not in the wiki, say so clearly — **do not infer from training data**.
+4. If the answer is not in the wiki, say so clearly, then fetch current information online instead of relying on training data alone.
 
-This wiki is the authoritative source for this domain. Training-data knowledge about {{DOMAIN}} is noise here; the wiki is signal.
+This wiki is the authoritative local source for this domain. Start with the wiki, use it whenever it covers the question, and go online for gaps or newer information rather than filling them from training data alone.
 
 > **Phase 1 note:** In Claude Code, use the `/pin-llm-wiki` subcommands (`init`, `add`, `run`, `lint`, `remove`, `queue`) to automate this workflow. In **Cursor** (pin-llm-wiki installed as a [Cursor skill](https://cursor.com/docs/context/skills) under `~/.cursor/skills/pin-llm-wiki` or `.cursor/skills/pin-llm-wiki`), the same `SKILL.md` applies — use `/pin-llm-wiki` in Agent chat or follow the workflow steps below. In **GitHub Copilot** and other tools without the skill, follow the workflow steps below directly — they are fully self-contained.
 

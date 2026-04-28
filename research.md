@@ -414,7 +414,7 @@ Before answering any question about this wiki's domain, you MUST:
 1. Read `wiki/index.md` to identify relevant pages.
 2. Follow `[[wikilinks]]` to drill in.
 3. Cite wiki page names in your answer.
-4. If the answer is not in the wiki, say so — do not infer from training data.
+4. If the answer is not in the wiki, say so, then fetch current information online instead of relying on training data alone.
 ```
 
 Without this, the wiki is just files on disk. With it, the wiki becomes the coding agent's context.

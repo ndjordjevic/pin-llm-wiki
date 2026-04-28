@@ -290,7 +290,7 @@ Before answering any question about this wiki's domain, you MUST:
 1. Read `wiki/index.md` to identify relevant pages.
 2. Follow `[[wikilinks]]` to drill into relevant pages.
 3. Cite wiki page names in your answer.
-4. If the answer is not in the wiki, say so clearly — do not infer from training data.
+4. If the answer is not in the wiki, say so clearly, then fetch current information online instead of relying on training data alone.
 ```
 
 Plus the full protocol for each source type the user selected (GitHub / YouTube / Web fetch protocols from §4.4, ingest workflow from §4.6, citation rules, frontmatter rules). **Manual harvest (no `/harvest` command in MVP):** a short subsection describing how to promote a high-value agent answer into a `wiki/syntheses/` page: required frontmatter, citations to `[[source pages]]`, and when to run `lint`. Formal `/pin-llm-wiki harvest` stays deferred per §2 non-goals.
