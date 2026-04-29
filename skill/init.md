@@ -38,7 +38,7 @@ First, display this table:
 |---|---|---|---|---|---|
 | `brief` | ~15k tokens | ~10k tokens | ~5k tokens | ~30k | skeleton only |
 | `standard` | ~30k tokens | ~40k tokens | ~22k tokens | ~90k (~$0.50–$2) | recommended |
-| `deep` | ~100k+ tokens | ~40k tokens | ~80k+ tokens | ~200k+ ($5–$50+) | full crawl |
+| `deep` | ~100k+ tokens | ~40k tokens | ~80k+ tokens | ~200k+ ($5–$50+) | docs-driven crawl; multi-product platforms (≥2 products) produce one umbrella + per-product sub-pages, all citing one raw file |
 
 Then ask:
 > "Which detail level? (`brief` / `standard` / `deep`)"

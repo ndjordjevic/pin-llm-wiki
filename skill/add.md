@@ -82,7 +82,7 @@ Derive slug and raw file path (except YouTube — finalized after fetch; see bel
 - Domain: extract hostname from URL, strip `www.` prefix. Preserve subdomains (e.g. `docs.langchain.com` stays as `docs.langchain.com` — do not collapse to `langchain.com`).
 - **Default slug:** the domain string
 - **GitHub non-root page special case:** if the URL is `github.com/<org>/<repo>/<...>`, derive the slug as `<org>-<repo>-<path-slug>`, where `<path-slug>` is the remaining path joined with hyphens and normalized to kebab-case. Example: `https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking` → `modelcontextprotocol-servers-tree-main-src-sequentialthinking`
-- Raw path: `raw/web/<slug>.md` (brief/standard) or `raw/web/<slug>/` (deep)
+- Raw path: `raw/web/<slug>.md` — always one file per ingest, regardless of detail level. Deep mode no longer produces per-page directories. In deep multi-product mode the single raw file contains `## Product:` sections that drive sub-page creation during ingest.
 
 ---
 
@@ -108,7 +108,7 @@ Use the effective detail level throughout. Apply `<!-- branch:X -->` and `<!-- c
 
 ## Companion fetch
 
-**Only runs when:** `type = web` AND `companion_github_url` (returned by the web fetch protocol step 4) is non-null AND `suppress_companion` is false.
+**Only runs when:** `type = web` AND `companion_github_url` (returned by the web fetch protocol step 7) is non-null AND `suppress_companion` is false AND `products` (from web fetch step 5) is empty or has fewer than 2 entries. In deep multi-product mode (`len(products) >= 2`), companion fetch is skipped entirely — the protocol returns `companion_github_url = null`.
 
 If `companion_override_url` is set, use it as `companion_github_url` instead of what the protocol discovered.
 
@@ -141,8 +141,9 @@ Carry this context into ingest:
 | `effective_detail_level` | tag override or config default |
 | `auto_mark_complete` | from config |
 | `today` | current date `YYYY-MM-DD` |
-| `companion_slug` | `<org>-<repo>` if companion fetch succeeded; null otherwise |
+| `companion_slug` | `<org>-<repo>` if companion fetch succeeded; null otherwise (always null in deep multi-product mode) |
 | `companion_raw_file_path` | `raw/github/<org>-<repo>.md` if companion fetch succeeded; null otherwise |
+| `products` | list returned by web fetch step 5 (web sources only). Empty/null when only one product was discovered or detection is not applicable. ≥2 entries triggers the multi-product ingest branch. |
 
 ---
 
@@ -160,11 +161,14 @@ Ingested: <url>
   Wiki page:   wiki/sources/<slug>.md
   Detail:      <effective_detail_level>
   Companion:   raw/github/<org>-<repo>.md   ← only when companion fetch succeeded
+  Products:    <product1>, <product2>, ...   ← only when deep multi-product mode produced subs
+  Sub-pages:   wiki/sources/<slug>-<product1>.md, wiki/sources/<slug>-<product2>.md, ...
 
 Updated: wiki/index.md, wiki/overview.md, wiki/log.md, raw/<type>/README.md, inbox.md
 ```
 
 If companion fetch was attempted but failed: `  Companion:   fetch failed (<reason>) — web-only page produced`.
 If the detected type was not in `source_types`, append: `  Note: source type <type> is not in this wiki's source_types config.`
+If multi-product mode was triggered, list all sub-page paths under `Sub-pages:`.
 
 Do not run `git commit`—see the wiki’s `AGENTS.md` **Git — never auto-commit** (suggested message for the human: `ingest: <slug>`).

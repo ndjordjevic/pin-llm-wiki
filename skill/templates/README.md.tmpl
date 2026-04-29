@@ -34,6 +34,8 @@ inbox.md            ← drop new URLs here
 
 **GitHub non-root pages are treated as single-page web sources.** A URL like `https://github.com/org/repo/tree/main/path` is ingested as the exact page only, with no docs discovery and no companion-repo discovery.
 
+**Deep multi-product mode.** A web source ingested at `<!-- detail:deep -->` whose docs/site advertise ≥2 distinct products (each with its own docs subsection or distinct GitHub repo) writes one umbrella page plus one sub-page per product, all citing the same raw file. Example: `https://www.langchain.com/` → `wiki/sources/langchain.com.md` (umbrella) + per-product subs like `wiki/sources/langchain.com-langgraph.md`.
+
 ## Inline inbox tags
 
 Append these (as HTML comments) to any URL line in `inbox.md`:

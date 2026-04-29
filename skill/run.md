@@ -73,7 +73,7 @@ Same rules as `add`:
 
 - **GitHub:** slug = `<org>-<repo>`, raw path = `raw/github/<org>-<repo>.md`
 - **YouTube:** video ID from URL; title slug finalized after fetch step 1 (requires `yt-dlp --dump-json` output); full slug = `<video-id>-<title-slug>`; raw path = `raw/youtube/<video-id>-<title-slug>.md`
-- **Web:** slug = hostname with `www.` stripped (preserve subdomains); raw path = `raw/web/<slug>.md`
+- **Web:** slug = hostname with `www.` stripped (preserve subdomains); raw path = `raw/web/<slug>.md`. Always one file per ingest, regardless of detail level. In deep multi-product mode the single raw file contains `## Product:` sections; ingest uses them to write one umbrella page plus one sub-page per product (sub-slug = `<slug>-<product-slug>`).
 - **GitHub non-root page special case:** if the URL is `github.com/<org>/<repo>/<...>`, derive the web slug as `<org>-<repo>-<path-slug>`, where `<path-slug>` is the remaining path joined with hyphens and normalized to kebab-case. Example: `https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking` → `modelcontextprotocol-servers-tree-main-src-sequentialthinking`
 
 ### 6. Fetch
@@ -97,7 +97,7 @@ Apply `<!-- branch:X -->` and `<!-- clone -->` tags (GitHub only). Use the effec
 
 ### 6b. Companion fetch (web sources only)
 
-**Only runs when:** type = web AND `companion_github_url` (returned by the web fetch protocol step 4) is non-null AND `suppress_companion` is false.
+**Only runs when:** type = web AND `companion_github_url` (returned by the web fetch protocol step 7) is non-null AND `suppress_companion` is false AND `products` (from web fetch step 5) is empty or has fewer than 2 entries. In deep multi-product mode the protocol returns `companion_github_url = null`, so this step is a no-op.
 
 If `companion_override_url` is set, use it as `companion_github_url` instead of the discovered value.
 
@@ -127,8 +127,9 @@ Pass this context:
 | `effective_detail_level` | override or config default |
 | `auto_mark_complete` | from config |
 | `today` | current date |
-| `companion_slug` | `<org>-<repo>` if companion fetch succeeded; null otherwise |
+| `companion_slug` | `<org>-<repo>` if companion fetch succeeded; null otherwise (always null in deep multi-product mode) |
 | `companion_raw_file_path` | `raw/github/<org>-<repo>.md` if companion fetch succeeded; null otherwise |
+| `products` | list returned by web fetch step 5 (web sources only). Empty/null when only one product was discovered or detection is not applicable. ≥2 entries triggers the multi-product ingest branch. |
 
 Ingest step 9 is a no-op for git—do not run `git commit` for ingest (see the wiki’s `AGENTS.md` **Git — never auto-commit**).
 
@@ -154,19 +155,30 @@ For **YouTube**: the full slug includes the title, which is encoded in the raw f
 
 ### 2. Read existing raw file(s)
 
-Read the existing `wiki/sources/<slug>.md` frontmatter. Check whether it has a `raw_files:` list (indicating a **unified page**).
+Read the existing `wiki/sources/<slug>.md` frontmatter. Determine the page shape:
+
+| Frontmatter signal | Shape |
+|---|---|
+| `raw_files:` present | **Unified web+github** |
+| `subpages:` present | **Multi-product umbrella** |
+| `parent_slug:` present | **Multi-product sub** — refresh **must** target the umbrella URL, not the sub. Stop with: "Cannot refresh sub-page directly. Add `<!-- refresh -->` to the umbrella's inbox line (`<umbrella-source-url>`) instead — the multi-product flow re-ingests the umbrella + all subs from one raw file." |
+| none of the above | **Standalone** |
 
 **Unified page** (`raw_files:` present): iterate over every path in `raw_files:`. For each, read the existing file (before state) and hold in memory.
 
-**Non-unified page** (no `raw_files:`): read `raw_file_path` only (existing behavior unchanged).
+**Multi-product umbrella** (`subpages:` present): the page shares **one** raw file with all its subs. Read `raw_file_path` (the single web raw) only.
+
+**Standalone page**: read `raw_file_path` only.
 
 ### 3. Re-fetch
 
 **Unified page:** for each raw file in `raw_files:`, determine the protocol from the path prefix (`raw/web/` → web protocol, `raw/github/` → github protocol) and re-fetch. Hold new content in memory without overwriting yet.
 
-**Non-unified page:** re-fetch using the detected-type protocol as before.
+**Multi-product umbrella:** re-fetch using the web protocol at the same `effective_detail_level` (which must be `deep` since the page is multi-product). The protocol re-runs product discovery and per-product docs fetch, but **discovery output is overridden by the existing `subpages:` list**: do not re-derive `subpages:`, do not add new sub-pages for newly-discovered products, do not drop subs whose products no longer appear. Hold the new raw content in memory without overwriting yet.
 
-**Discovery output is discarded during refresh.** Refresh only updates the URLs already listed in the existing source page — it never promotes a non-unified page to unified, never adds a new companion, and never changes `raw_files:`. If the web protocol's step 4 returns a `companion_github_url`, ignore it. To change page structure, the user must `remove` and re-add.
+**Standalone page:** re-fetch using the detected-type protocol as before.
+
+**Discovery output is discarded during refresh.** Refresh only updates the URLs and structure already recorded in the existing source page — it never promotes a non-unified page to unified, never promotes a single-product page to multi-product, never adds a new companion, never adds or drops sub-pages, and never changes `raw_files:`, `subpages:`, or `companion_urls:`. If the web protocol returns a `companion_github_url`, a new `products` list, or a different shape than the existing page, ignore the discovery output. To change page structure, the user must `remove` and re-add.
 
 ### 4. Compare
 
@@ -180,11 +192,15 @@ Strip from both copies any frontmatter field whose value matches `YYYY-MM-DD` or
 - `changed_raws` non-empty → overwrite each changed raw; run ingest steps 2–5 and 7 (skip 6, 8, 9) **with unified context** (see below); write refresh log entry below.
 - All unchanged → record `refresh: <slug> (no change)`.
 
-**Unified-page ingest context for refresh:** derive companion context from the existing source page's `raw_files:` list — locate the entry beginning with `../../raw/github/`, strip the prefix and `.md` suffix to get `companion_slug`, and use the path as `companion_raw_file_path`. The primary `raw_file_path` is the `../../raw/web/...` entry from the same list, normalized to `raw/web/<slug>.md` (the leading `../../` is dropped since ingest paths are repo-relative). Pass `companion_slug` and `companion_raw_file_path` to ingest so it preserves the unified body and frontmatter.
+**Unified-page ingest context for refresh:** derive companion context from the existing source page's `raw_files:` list — locate the entry beginning with `../../raw/github/`, strip the prefix and `.md` suffix to get `companion_slug`, and use the path as `companion_raw_file_path`. The primary `raw_file_path` is the `../../raw/web/...` entry from the same list, normalized to `raw/web/<slug>.md` (the leading `../../` is dropped since ingest paths are repo-relative). Pass `companion_slug` and `companion_raw_file_path` to ingest so it preserves the unified body and frontmatter. Pass `products = []`.
 
-**Non-unified page:**
+**Multi-product umbrella:**
 - If content is identical → record `refresh: <slug> (no change)`.
-- If content differs → overwrite `raw_file_path`, run ingest steps 2–5 and 7. Pass `companion_slug = null` and `companion_raw_file_path = null` (refresh never promotes to unified).
+- If content differs → overwrite `raw_file_path`, run ingest steps 2c, 4, 5, and 7 (skip 6, 8, 9). Build `products` from the existing umbrella's `subpages:` list — for each `<sub-slug>`, read `wiki/sources/<sub-slug>.md` and extract its `product:` value (the product slug) and `source_url:` (the deep_link_url). Resolve the display `name` by matching the product slug against the new raw file's `## Product: <Name>` headings (the heading text after `## Product: ` is the display name); if no match, fall back to the sub-page's first body heading or, last resort, a title-cased slug. Pass each entry as `{name, slug, deep_link_url, ...}` to ingest. Step 2c regenerates the umbrella body and each sub-page body from the new raw file using these existing assignments. Pass `companion_slug = null`.
+
+**Standalone page:**
+- If content is identical → record `refresh: <slug> (no change)`.
+- If content differs → overwrite `raw_file_path`, run ingest steps 2–5 and 7. Pass `companion_slug = null` and `companion_raw_file_path = null` and `products = []` (refresh never promotes to unified or multi-product).
 
 In either case, if content changed, append to `wiki/log.md` immediately below the heading (newest at top):
 ```

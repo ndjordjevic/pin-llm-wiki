@@ -21,7 +21,9 @@
       "WebFetch(domain:docs.cursor.com)",
       "WebFetch(domain:agents.md)",
       "WebFetch(domain:cursor.com)",
-      "WebFetch(domain:github.blog)"
+      "WebFetch(domain:github.blog)",
+      "Bash(rtk wc *)",
+      "Bash(python3 *)"
     ]
   }
 }
