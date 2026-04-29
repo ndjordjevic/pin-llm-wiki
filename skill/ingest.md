@@ -195,7 +195,7 @@ updated: <today>
 - **Omit** `companion_urls:` and `raw_files:` — multi-product umbrellas do not have a github companion. Each sub may carry a `repo_url` in the raw file; the human can ingest those separately as needed.
 - **MUST NOT include** `sources:` or `parent_slug:`.
 
-If the umbrella **already exists** (refresh): preserve `created`, `tags`, `related`, `product`, `source_url`, `subpages`. Always overwrite `updated` and `detail_level`. **Never auto-add or auto-drop entries from `subpages:` during refresh** — structural changes require remove + re-add (see Refresh notes).
+If the umbrella **already exists** (refresh): preserve `created`, `tags`, `related`, `product`, `source_url`. Always overwrite `updated` and `detail_level`. The `subpages:` list is rewritten from the merged `products` list passed by the caller — this is how refresh can add new sub-pages when discovery turns up a product the original ingest missed (run.md, Step 4 of the refresh flow handles the merge: existing subs + new products = additive). Never **drop** an existing sub-slug from `subpages:` during refresh — refresh keeps stale entries; only `remove` deletes a sub.
 
 **Body structure:**
 
@@ -276,6 +276,8 @@ _All claims below are sourced from ../../raw/web/<slug>.md unless otherwise note
 The banner cites the **same** raw file as the umbrella (`../../raw/web/<slug>.md`). Every sub-page shares one raw file with the umbrella — that is the explicit design constraint of multi-product deep mode: one ingest, one raw file, many wiki pages.
 
 If the raw file's `## Product: <Name>` section is sparse (the product was discovered via repo URL only, no `docs_url`), the sub-page may be short; note in the summary paragraph that fuller detail will require a separate ingest of the product's repo.
+
+**Refresh: stale-entry handling.** During refresh, the `products` list passed by the caller may include "stale" entries — sub-pages whose product slug does not match any `## Product:` section in the new raw file (the run.md refresh flow keeps them rather than dropping). For these entries, **do not regenerate the body** (there is no source material in the new raw to regenerate from). Skip body rewrite entirely; only update the sub-page's `updated:` frontmatter to `<today>`. The existing body is preserved verbatim. Detect a stale entry by attempting to locate `## Product: <Name>` (or matching by product slug against each section's `- Slug:` line) — if no match, mark the entry stale.
 
 ### 2c.4 — Tags and related across umbrella + subs
 

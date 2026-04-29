@@ -23,7 +23,11 @@
       "WebFetch(domain:cursor.com)",
       "WebFetch(domain:github.blog)",
       "Bash(rtk wc *)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "WebFetch(domain:docs.langchain.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.langchain.com)",
+      "Bash(rtk diff *)"
     ]
   }
 }

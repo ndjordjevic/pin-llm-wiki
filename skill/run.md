@@ -174,11 +174,30 @@ Read the existing `wiki/sources/<slug>.md` frontmatter. Determine the page shape
 
 **Unified page:** for each raw file in `raw_files:`, determine the protocol from the path prefix (`raw/web/` → web protocol, `raw/github/` → github protocol) and re-fetch. Hold new content in memory without overwriting yet.
 
-**Multi-product umbrella:** re-fetch using the web protocol at the same `effective_detail_level` (which must be `deep` since the page is multi-product). The protocol re-runs product discovery and per-product docs fetch, but **discovery output is overridden by the existing `subpages:` list**: do not re-derive `subpages:`, do not add new sub-pages for newly-discovered products, do not drop subs whose products no longer appear. Hold the new raw content in memory without overwriting yet.
+**Multi-product umbrella:** re-fetch using the web protocol at the same `effective_detail_level` (which must be `deep` since the page is multi-product).
+
+**Critical — do not shortcut discovery on refresh.** The natural temptation is to read the existing umbrella's `subpages:` list, conclude "those are the products," and re-fetch only those products' docs pages. **Do not do this.** It freezes the product set at its current state and defeats the whole purpose of refresh — refresh exists precisely so newly-added upstream products can be picked up. Instead:
+
+1. Run the web protocol's structural fetches (steps 1–4) on the URL: curl llms.txt, fetch the landing page, fetch the docs index. **Do not pre-load the existing `subpages:` list to inform what to fetch.** These structural fetches must run as if you were ingesting fresh.
+2. Run web protocol step 5 (product discovery) **fully**, including step 5a (multi-depth candidate enumeration), step 5b (product-node identification), step 5c (classification), and step 5d (audit trail). Do not skip the sanity check. Do not derive the product list from the existing `subpages:`. The output of step 5 is `discovered_products`.
+3. Run web protocol step 6 (per-product docs fetch) on **`discovered_products`**, not on the existing subs. If discovery found a product the existing wiki doesn't have, this is the only path that fetches its docs.
+4. Continue the protocol through step 8 (write raw).
+
+The existing `subpages:` list is consulted **only** in step 4 of this refresh flow (below) to merge the freshly discovered set with the existing subs. It plays no role in the fetch.
+
+The protocol re-runs product discovery and per-product docs fetch. **Discovery output is additive on refresh:**
+- Newly-discovered products that are not already represented in the umbrella's `subpages:` list become **new sub-pages** in step 4 (this is what makes refresh useful when the upstream gains a product or when the original ingest missed one).
+- Existing sub-pages whose products no longer appear in the new discovery output are **kept** (refresh never deletes pages). They are flagged as INFO so the human can `remove <sub-slug>` if the upstream really removed the product.
+
+Hold the new raw content and the new `products` list in memory without overwriting yet.
 
 **Standalone page:** re-fetch using the detected-type protocol as before.
 
-**Discovery output is discarded during refresh.** Refresh only updates the URLs and structure already recorded in the existing source page — it never promotes a non-unified page to unified, never promotes a single-product page to multi-product, never adds a new companion, never adds or drops sub-pages, and never changes `raw_files:`, `subpages:`, or `companion_urls:`. If the web protocol returns a `companion_github_url`, a new `products` list, or a different shape than the existing page, ignore the discovery output. To change page structure, the user must `remove` and re-add.
+**Refresh shape rules.** Refresh is additive within a shape, not across shapes:
+- A **multi-product umbrella** can gain new sub-pages on refresh (additive). Existing subs are never dropped.
+- A **standalone** or **unified** page is **not** auto-promoted to multi-product even if the new discovery returns ≥2 products — the shape change is too invasive to do silently. Log an INFO suggesting `remove + re-add` if a promotion looks warranted.
+- A **unified web+github** page does not gain or lose its companion on refresh. To change companion behavior, `remove + re-add`.
+- A **multi-product umbrella** is never demoted to standalone, even if discovery now returns 0 or 1 products. Existing subs persist.
 
 ### 4. Compare
 
@@ -196,7 +215,14 @@ Strip from both copies any frontmatter field whose value matches `YYYY-MM-DD` or
 
 **Multi-product umbrella:**
 - If content is identical → record `refresh: <slug> (no change)`.
-- If content differs → overwrite `raw_file_path`, run ingest steps 2c, 4, 5, and 7 (skip 6, 8, 9). Build `products` from the existing umbrella's `subpages:` list — for each `<sub-slug>`, read `wiki/sources/<sub-slug>.md` and extract its `product:` value (the product slug) and `source_url:` (the deep_link_url). Resolve the display `name` by matching the product slug against the new raw file's `## Product: <Name>` headings (the heading text after `## Product: ` is the display name); if no match, fall back to the sub-page's first body heading or, last resort, a title-cased slug. Pass each entry as `{name, slug, deep_link_url, ...}` to ingest. Step 2c regenerates the umbrella body and each sub-page body from the new raw file using these existing assignments. Pass `companion_slug = null`.
+- If content differs → overwrite `raw_file_path`, run ingest steps 2c, 4, 5, and 7 (skip 6, 8, 9). Build the `products` list passed to ingest as the **union of existing subs and newly-discovered products**:
+  1. **Existing entries** — for each `<sub-slug>` in the umbrella's `subpages:` list, read `wiki/sources/<sub-slug>.md` and extract `product:` (the product slug) and `source_url:` (the `deep_link_url`). Resolve the display `name` by matching the product slug against the new raw file's `## Product: <Name>` headings (the heading text after `## Product: ` is the display name); if no match, fall back to the sub-page's first body heading or, last resort, a title-cased slug.
+  2. **New entries** — parse the new raw file for every `## Product: <Name>` section. For each, read its `- Slug:`, `- Deep link:`, `- Docs URL:`, and `- Companion repo:` lines. If the slug is **not** already represented in step 1's existing entries, append it to `products` as a new entry — this becomes a new sub-page. The new sub-slug is `<umbrella-slug>-<product-slug>` (Step 2c.1 derivation). Log INFO: `refresh: <umbrella> | new sub-page: <new-sub-slug>`.
+  3. **Stale entries** — if step 1 has an entry whose product slug does NOT appear in any `## Product:` section of the new raw, keep it in `products` anyway (so its sub-page is preserved and re-rendered with whatever about-text remains, or left unchanged if no source material survives). Log INFO: `refresh: <umbrella> | sub-page <sub-slug> retained — product not present in new discovery; remove manually if upstream truly dropped it`.
+
+  Pass the merged `products` list to ingest. Step 2c writes/updates the umbrella body (with the updated `subpages:` list reflecting any new subs) and each sub-page body. Pass `companion_slug = null`.
+
+  After ingest returns, append a refresh log entry to `wiki/log.md`: include in the log the list of newly-created sub-pages (if any) so the change is auditable.
 
 **Standalone page:**
 - If content is identical → record `refresh: <slug> (no change)`.
