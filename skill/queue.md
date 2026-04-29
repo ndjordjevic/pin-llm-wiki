@@ -1,34 +1,16 @@
 # queue — add URLs to the pending inbox without ingesting
 
-> **Skill directory note:** This file is in the skill directory (e.g. `<skill-dir>/`, `~/.claude/skills/pin-llm-wiki/`, `~/.copilot/skills/pin-llm-wiki/`, or `~/.cursor/skills/pin-llm-wiki/`). All `templates/` and sibling-file paths below are relative to that same directory. Use whichever path applies to the tool that loaded this skill.
+(Skill-directory paths and the `.pin-llm-wiki.yml` Guard are defined in `SKILL.md`.)
 
 ## Purpose
 
-`queue` lets any agent — human or automated — add one or more URLs to `inbox.md`'s `## Pending` section **without fetching or ingesting them**. The human reviews the pending list and runs `/pin-llm-wiki run` (or `/pin-llm-wiki add <url>`) when ready to ingest.
-
-Use `queue` when you discover a potentially relevant source mid-task and want to surface it for later review. Do not use `add` just to queue — `add` always fetches and ingests immediately.
-
----
-
-## Guard
-
-Check whether `.pin-llm-wiki.yml` exists in the current working directory. If not, stop:
-> "No wiki found here (`.pin-llm-wiki.yml` missing). Run `/pin-llm-wiki init` to scaffold one first."
+`queue` lets any agent add one or more URLs to `inbox.md`'s `## Pending` section **without fetching or ingesting**. Use it to surface a potentially relevant source for later human review. Use `add` instead when you actually want to ingest now.
 
 ---
 
 ## Input
 
-Accept one or more URLs from the invocation args (space-separated, or one per call). Each URL may be followed by inline tags:
-
-- `<!-- detail:X -->` where X is `brief`, `standard`, or `deep`
-- `<!-- branch:X -->` — GitHub only
-- `<!-- clone -->` — GitHub only
-- `<!-- skip -->` — queued but skipped on next `run`
-- `<!-- companion:github.com/<org>/<repo> -->` — web only; override companion GitHub discovery with this exact repo
-- `<!-- no-companion -->` — web only; suppress companion GitHub fetch even if a repo is found
-
-An optional freeform **note** may follow the tags on the same line, wrapped in an HTML comment: `<!-- note: <text> -->`. This note is preserved as-is and ignored by all other subcommands.
+Accept one or more URLs from the invocation args (space-separated). Each URL may be followed by any of the inline tags listed in `<skill-dir>/templates/protocols/common.md` § Inbox-line tag parsing.
 
 ---
 
@@ -85,5 +67,5 @@ List each skipped URL with its reason under "Skipped:".
 ## Notes
 
 - `queue` never runs a fetch, writes a raw file, or touches any wiki page.
-- `queue` never runs `git commit` — see the wiki's `AGENTS.md` **Git — never auto-commit**.
-- Any agent (human-directed or autonomous) may call `queue`. It is the only inbox mutation an agent may perform outside of the `add`, `run`, and `remove` workflows.
+- Any agent may call `queue`. It is the only inbox mutation an agent may perform outside of `add`, `run`, and `remove`.
+- No agent commits — see SKILL.md Git policy.

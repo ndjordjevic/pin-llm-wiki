@@ -1,11 +1,6 @@
 # remove — soft-delete a source
 
-## Guard
-
-Check whether `.pin-llm-wiki.yml` exists in the current working directory. If not, stop:
-> "No wiki found here (`.pin-llm-wiki.yml` missing). Run `/pin-llm-wiki init` to scaffold one first."
-
----
+(Skill-directory paths and the `.pin-llm-wiki.yml` Guard are defined in `SKILL.md`.)
 
 ## Setup
 
@@ -167,9 +162,9 @@ Collect all matches as `{file, line, match}` and present them in the report belo
 
 ---
 
-## Step 9 — Git (no agent commits)
+## Step 9 — Git
 
-Do not run `git commit` or `git push` after remove—see the wiki’s `AGENTS.md` **Git — never auto-commit**.
+No agent commits — see SKILL.md Git policy.
 
 ---
 

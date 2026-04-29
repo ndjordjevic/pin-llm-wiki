@@ -1,15 +1,10 @@
 # init — scaffold a new wiki
 
-> **Skill directory note:** This file is in the skill directory (e.g. `<skill-dir>/`, `~/.claude/skills/pin-llm-wiki/`, `~/.copilot/skills/pin-llm-wiki/`, or `~/.cursor/skills/pin-llm-wiki/`). All `templates/` and `protocols/` paths below are relative to that same directory. Use whichever path applies to the tool that loaded this skill.
+(Skill-directory paths are defined in `SKILL.md`.)
 
-## Guard
+## Guard (inverse: must NOT already exist)
 
-Before anything else:
-
-1. Check whether `.pin-llm-wiki.yml` exists in the current working directory.
-2. If it exists: **stop**. Tell the user:
-   > "A wiki already exists here (`.pin-llm-wiki.yml` found). Use `/pin-llm-wiki add <url>` to ingest new sources or `/pin-llm-wiki run` to process pending inbox items."
-3. Only proceed if `.pin-llm-wiki.yml` is absent.
+If `.pin-llm-wiki.yml` exists in the current working directory, **stop**: *"A wiki already exists here (`.pin-llm-wiki.yml` found). Use `/pin-llm-wiki add <url>` to ingest new sources or `/pin-llm-wiki run` to process pending inbox items."* Only proceed if absent.
 
 ---
 
@@ -257,7 +252,7 @@ Write AGENTS_BODY to `.github/copilot-instructions.md`.
 
 ### Step 8 — Git init (if GIT_INIT is true)
 
-Run `git init` only. **Do not** run `git add` or `git commit` for the scaffold—the human reviews file changes and commits when ready (same policy as `AGENTS.md` **Git — never auto-commit**).
+Run `git init` only. Do not run `git add` or `git commit` (see SKILL.md Git policy).
 
 ### Step 9 — Confirmation
 

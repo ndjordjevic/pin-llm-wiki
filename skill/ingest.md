@@ -409,6 +409,6 @@ In multi-product mode there is still **one** inbox line (the umbrella's URL); su
 
 ---
 
-## Step 9 — Git (no agent commits)
+## Step 9 — Git
 
-Do not run `git commit` or `git push` after ingest—see the wiki's `AGENTS.md` **Git — never auto-commit**.
+No agent commits — see SKILL.md Git policy.

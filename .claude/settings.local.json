@@ -27,7 +27,8 @@
       "WebFetch(domain:docs.langchain.com)",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:www.langchain.com)",
-      "Bash(rtk diff *)"
+      "Bash(rtk diff *)",
+      "Bash(sort -k1 -rn)"
     ]
   }
 }

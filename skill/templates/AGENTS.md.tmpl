@@ -63,163 +63,69 @@ For unified web+github pages: if a `companion_raw_file_path` is passed by the ca
 
 For deep multi-product web sources: the caller passes a `products` list with ≥2 entries. The single web raw file contains `## Product: <Name>` sections per product — these drive the umbrella + sub-page output described below.
 
-**Step 2 — Create or update `wiki/sources/<slug>.md`.**
-
-Three ingest shapes are possible. Pick the one that fits this ingest:
+**Step 2 — Create or update `wiki/sources/<slug>.md`.** Pick the shape that fits this ingest:
 
 | Shape | Trigger | Output |
 |---|---|---|
 | **Standalone** | github / youtube / single-product web | one source page at `wiki/sources/<slug>.md` |
 | **Unified web+github** | `type=web`, companion fetch succeeded, `products` empty | one source page with `companion_urls:` + `raw_files:` |
-| **Multi-product (deep web)** | `type=web`, `effective_detail_level=deep`, `products` has ≥2 entries | umbrella at `wiki/sources/<slug>.md` + one sub at `wiki/sources/<slug>-<product>.md` per product (see **Multi-product body structure** below) |
+| **Multi-product** | `type=web`, `effective_detail_level=deep`, `len(products) >= 2` | umbrella `wiki/sources/<slug>.md` + one sub `wiki/sources/<slug>-<product>.md` per product |
 
-Frontmatter:
-```yaml
----
-type: source
-source_url: <original URL of the source — GitHub repo URL, website URL, YouTube video URL>
-companion_urls:              # ONLY on unified web+github pages; omit entirely on all others
-  - https://github.com/<org>/<repo>
-raw_files:                   # ONLY on unified web+github pages; omit entirely on all others
-  - ../../raw/web/<domain>.md
-  - ../../raw/github/<org>-<repo>.md
-subpages:                    # ONLY on multi-product umbrella pages; omit entirely on all others
-  - <slug>-<product1>
-  - <slug>-<product2>
-parent_slug: <umbrella-slug> # ONLY on multi-product sub-pages; omit entirely on all others
-tags: []
-related: []
-product: <product-slug>
-detail_level: {{DETAIL_LEVEL}}
-created: YYYY-MM-DD
-updated: YYYY-MM-DD
----
-```
+See **Frontmatter rules** below for the exact yaml shape per page type. Key constraints:
+- `subpages:`, `parent_slug:`, `companion_urls:`, and `raw_files:` are **mutually exclusive**. Lint check #7 enforces this.
+- Source pages **never** include `sources:` — they do not cite themselves.
+- `product:` is always populated. Derive from the repo (strip author prefix: `obra-superpowers` → `superpowers`) or the domain (strip TLDs: `runcabinet.com` → `cabinet`). Multi-product umbrellas use the umbrella slug itself (e.g. `langchain.com`). Multi-product subs use the product's own slug. Resolved in Step 2b for standalone/unified; explicit in Step 2c for multi-product.
 
-`subpages:`, `parent_slug:`, `companion_urls:`, and `raw_files:` are **mutually exclusive**: a page is either standalone (none present), unified (companion_urls + raw_files), an umbrella (subpages), or a sub (parent_slug). Lint check #7 enforces this.
+Body conventions (apply to every shape):
+- **No H1 heading.** The slug `[[<slug>]]` in `wiki/index.md` is the title. Body starts with a summary paragraph.
+- **No `---` horizontal rules** between sections.
+- Second line is a **banner citation**: `_All claims below are sourced from ../../raw/<type>/<file>.md unless otherwise noted._` Unified pages cite the **web** raw only; github material is cited inline. Multi-product subs cite the **umbrella's** raw file.
+- Per-paragraph inline citations only when a **second** raw file contributes; otherwise the banner covers everything.
+- `tags`: 4–8 short kebab-case terms, specific over generic (`claude-code-hooks` > `ai`).
+- `related`: slugs of existing pages with substantial overlap. **Bidirectional:** when adding `Y` to this page's `related`, append this page's slug to `Y`'s `related` and bump `Y`'s `updated:` date.
 
-Rules:
-- **MUST NOT include a `sources:` field.** Source pages do not cite themselves.
-- `source_url:` is the canonical URL of the source (e.g. `https://github.com/org/repo`, `https://example.com`, `https://youtube.com/watch?v=ID`). Always populated.
-- `product:` is a short kebab-case identifier for the product or project this source describes. Derive from the repo/site name — strip the author prefix from GitHub slugs (e.g. `obra-superpowers` → `superpowers`, `coleam00-claude-memory-compiler` → `claude-memory-compiler`, `gsd-build-get-shit-done` → `gsd`). For web sources, use the domain (strip `.com`/`.io`/etc, e.g. `runcabinet.com` → `cabinet`). **GitHub non-root pages treated as web sources are the exception:** derive the product slug from the repo portion of the page slug/source URL (for example `modelcontextprotocol-servers-tree-main-src-sequentialthinking` → `servers`). Sources describing the same product share the same `product:` slug. Resolved in Step 2b. Always populated — never `null`.
-- `companion_urls:` and `raw_files:` are present **only** on unified web+github pages. **Omit both fields entirely** on standalone web, github, and youtube source pages — do not write empty lists.
-- `subpages:` is present **only** on multi-product umbrella pages; `parent_slug:` is present **only** on multi-product sub-pages. Omit both entirely on every other shape.
-- For multi-product umbrellas: `product:` is the umbrella slug itself (the domain, e.g. `langchain.com`) so it does not collide with any sub's `product:`. Each sub uses its own product slug (e.g. `langgraph`).
-- First line of body: summary paragraph (what this source is and why it matters).
-- Second line: banner citation — `_All claims below are sourced from ../../raw/<type>/<file>.md unless otherwise noted._`
-  - **Unified web+github exception:** the banner always cites the primary **web** raw file only. GitHub-sourced material is cited inline at the paragraph level.
-- Then: sectioned body. Per-type structure (canonical sections, in this order; extra top-level sections allowed only for genuinely substantial subsystems — fold incidental content into a listed section):
-  - **GitHub:** what it does, installation, key features, architecture, example usage, maintenance status.
-  - **YouTube:** what the video is about (1 paragraph — sufficient to replace watching), key points by chapter, notable quotes, speaker context.
-  - **Web/product (no companion):** what it does, key features, architecture/concepts, main APIs, when to use, ecosystem.
-  - **Web/product (unified):** see **Unified body structure** below.
-  - **Multi-product umbrella:** summary, `## Products` (bullet list with `[[<sub-slug>]]` wikilinks), `## Architecture` (how the products fit together), `## When to use the platform`, `## Documentation` (docs site overview).
-  - **Multi-product sub:** same structure as Web/product (no companion), but the banner cites the **umbrella's** raw file (`../../raw/web/<umbrella-slug>.md`).
-- **No H1 heading.** The slug + `[[<slug>]]` wikilink in `wiki/index.md` is the title. Body starts with the summary paragraph.
-- **No horizontal rules (`---`)** between sections — only at frontmatter delimiters. `## H2` headings are enough structure.
-- **Populate `tags` and `related` at ingest time.**
-  - `tags`: 4–8 short kebab-case terms describing the source's main concepts, technologies, and domains. Specific over generic — prefer `claude-code-hooks`, `provider-adapter` over `ai`, `tool`.
-  - `related`: slugs of existing source pages with substantial conceptual overlap (same problem space, shared architecture, same underlying tool). Read each existing source's summary paragraph to judge overlap. May be empty if this is the first source or no overlap exists.
-  - **Bidirectional update:** for every slug `Y` added to this page's `related`, append this page's slug to `Y`'s `related` list and bump `Y`'s `updated:` date. Otherwise older pages never gain forward links to newer ones.
-- Add per-paragraph citations only when a **second** raw file contributes to this page; otherwise the banner covers it.
+Per-shape body sections (in order — extra top-level sections allowed only for substantial subsystems):
+- **GitHub:** What it does · Installation · Key features · Architecture · Example usage · Maintenance status
+- **YouTube:** What the video is about (1 paragraph, replaces watching) · Key points by chapter · Notable quotes · Speaker context
+- **Web/product (no companion):** What it does · Key features · Architecture / concepts · Main APIs · When to use · Ecosystem
+- **Web/product (unified):** see **Unified body structure** below
+- **Multi-product umbrella:** see **Multi-product body structure** below
+- **Multi-product sub:** same as Web/product (no companion), but banner cites umbrella's raw file
 
-**Unified body structure** (web source with companion GitHub):
+**Unified body structure** (web + companion github). Canonical sections in order:
 
-```
-<Summary paragraph — synthesized web + github perspective>
+`What it does` (web) · `Key features` (web + github) · `Architecture` (github) · `Installation` (github) · `Example usage` (github, required even if minimal) · `When to use` (web) · `Maintenance status` (github — stars, release, license) · `Ecosystem` (web) · `Documentation` (web, optional)
 
-_All claims below are sourced from ../../raw/web/<domain>.md unless otherwise noted._
+Banner cites the **web** raw. Every github-sourced paragraph ends with the inline citation `(../../raw/github/<org>-<repo>.md)`. Do not invent ad-hoc sections (e.g. "Agent integration") — fold into Architecture / Example usage / Ecosystem.
 
-## What it does
-<web-sourced; banner covers>
+**Multi-product body structure** (deep web, `len(products) >= 2`). One ingest writes the umbrella + one sub per product; all pages cite the **same** raw file at `raw/web/<slug>.md`.
 
-## Key features
-<web-sourced for product features; github technical detail ends with: (../../raw/github/<org>-<repo>.md)>
+Umbrella sections: `## Products` (bullet list of `[[<slug>-<product>]]` wikilinks, one sentence each) · `## Architecture` (how products fit together) · `## When to use the platform` · `## Documentation`. The umbrella is a **hub** — link to subs, do not duplicate their feature lists.
 
-## Architecture
-<github-sourced; each paragraph ends with: (../../raw/github/<org>-<repo>.md)>
+Sub frontmatter has `parent_slug: <slug>`, `product: <product-slug>`, and `source_url:` set to the product's deep-link page (fallback: umbrella URL). Body uses the Web/product (no companion) sections. Banner cites the umbrella's raw file. If a sub was discovered via repo URL only (no docs subsection), it may be sparse — note that fuller detail requires ingesting the product's repo separately.
 
-## Installation
-<github-sourced; inline-cited: (../../raw/github/<org>-<repo>.md)>
+**Step 2b — Detect product grouping.** (Multi-product flow assigns `product:` explicitly in Step 2c — skip 2b in that case.) After writing a standalone or unified source page, scan existing `wiki/sources/*.md` to set `product:` such that pages describing the same product share the same slug:
+- **GitHub source** → use the homepage hostname from the raw's `## Metadata` block if it matches an existing web slug; otherwise strip the author prefix (`obra-superpowers` → `superpowers`).
+- **Web source** → if the raw body contains a `github.com/<org>/<repo>` URL whose `<org>-<repo>` matches an existing github slug, share the web slug as `product:`; otherwise derive from the domain (`runcabinet.com` → `cabinet`). GitHub non-root web pages use the repo segment (`servers` for `/modelcontextprotocol/servers/...`).
+- **YouTube** → kebab-case video title or channel name; never auto-grouped.
 
-## Example usage
-<github-sourced; inline-cited: (../../raw/github/<org>-<repo>.md); this section is required even if it is only one short paragraph or command block>
+`product:` must be populated — never `null`. Report any grouping in the post-ingest confirmation.
 
-## When to use
-<web-sourced; banner covers>
-
-## Maintenance status
-<github-sourced — stars, release, license, roadmap; inline-cited: (../../raw/github/<org>-<repo>.md)>
-
-## Ecosystem
-<web-sourced; banner covers>
-
-## Documentation   [optional — only if web raw has a substantial docs structure]
-<web-sourced; banner covers>
-```
-
-The banner cites the primary web raw file. All github-sourced paragraphs carry trailing inline citations `(../../raw/github/<org>-<repo>.md)`. Both formats satisfy lint check #8 (citation path format — relative-from-file).
-
-These headings are canonical for unified pages. Do not rename, skip, or replace them with ad hoc sections like "Agent integration". Fold that material into **Architecture**, **Example usage**, or **Ecosystem** instead.
-
-**Multi-product body structure** (deep web with `len(products) >= 2`):
-
-The single ingest produces **one umbrella page** + **one sub-page per product**. All pages cite the same raw file at `raw/web/<slug>.md` (the umbrella's slug; e.g. `raw/web/langchain.com.md`).
-
-Umbrella page (`wiki/sources/<slug>.md`) — frontmatter has `subpages:` and `product: <slug>` (the umbrella slug itself). Body:
-
-```
-<Summary paragraph — what platform this is, what it offers, who it's for>
-
-_All claims below are sourced from ../../raw/web/<slug>.md unless otherwise noted._
-
-## Products
-- [[<slug>-<product1>]] — <one-sentence what-it-is>
-- [[<slug>-<product2>]] — <one-sentence what-it-is>
-- ...
-
-## Architecture
-<How the products fit together (open-source frameworks, hosted offering, monetization). Banner covers.>
-
-## When to use the platform
-<Operator-facing summary of when this platform makes sense as a whole. Banner covers.>
-
-## Documentation
-<Brief description of the docs structure — docs site URL and how product subsections are organized. Banner covers.>
-```
-
-The umbrella is a **hub page**, not a deep dive. Detail lives in each sub. Do not duplicate sub-product feature lists on the umbrella — link to the sub.
-
-Sub-page (`wiki/sources/<slug>-<product>.md`) — frontmatter has `parent_slug: <slug>`, `product: <product-slug>`, `source_url:` set to the product's deep-link page when one exists (e.g. `https://www.langchain.com/langgraph`) and falling back to the umbrella URL only if not. Body uses the standard Web/product (no companion) structure: what it does, key features, architecture and concepts, main APIs, when to use, ecosystem. Banner cites `../../raw/web/<slug>.md` (the umbrella's raw file — sub-pages do not own their own raw files in this mode).
-
-If a product was discovered via repo URL only (no docs subsection on this site), its sub-page may be sparse — note in the summary that fuller detail will require ingesting the product's repo separately.
-
-**Step 2b — Detect product grouping.** (Skipped in multi-product flow — Step 2 assigns product slugs explicitly.)
-After writing the source page, scan existing `wiki/sources/*.md` and resolve `product:`:
-- **GitHub source:** read `homepageUrl` from the raw `## Metadata` block. Extract its hostname (strip `www.`). If any existing **web** source page has a slug equal to that hostname, set `product:` on both pages to that hostname. Otherwise derive from the slug: strip the author prefix (e.g. `obra-superpowers` → `superpowers`).
-- **Web source:** scan the raw file body for a `github.com/<org>/<repo>` URL in the first ~500 chars or in title/hero. If `<org>-<repo>` matches an existing **github** source slug, set `product:` on both pages to the web source's slug (the domain or page slug). Otherwise derive from the domain (strip `.com`/`.io`/etc, e.g. `runcabinet.com` → `cabinet`). **GitHub non-root web pages are the exception:** derive the product slug from the repo segment instead of `github.com` (for example `/modelcontextprotocol/servers/tree/main/src/sequentialthinking` → `servers`).
-- **YouTube:** derive from the video title or channel name (short, kebab-case). Never auto-grouped with other sources.
-- `product:` is always populated — never left as `null` after Step 2b.
-Report any grouping in the post-ingest confirmation.
-
-**Step 3 — Do NOT create additional cross-source pages during ingest.** Ingest updates source pages and `wiki/overview.md` only. In multi-product flow, the umbrella + subs are all source pages produced by one ingest — they are not cross-source synthesis pages.
+**Step 3 — No extra cross-source pages.** Ingest writes source pages + `wiki/overview.md` only. The umbrella + subs in multi-product flow are still source pages, not synthesis pages.
 
 **Step 4 — Update `wiki/index.md`.**
 - If `<slug>` already has a row in the Sources table: update the date and `detail_level` in-place. Do not add a second row or change the count.
 - If no row exists: add `| <slug> | <type> | {{DETAIL_LEVEL}} | <YYYY-MM-DD> | |` and increment the source count in the `_N sources ingested._` line.
 - **Multi-product:** add a row for the umbrella AND for every sub-page. Increment the count by the number of newly-created rows.
 
-**Step 5 — Update `wiki/overview.md`.**
-**Invariant:** the body contains **exactly one paragraph per entry in `sources:`**, in the same order. Verify this before writing.
+**Step 5 — Update `wiki/overview.md`.** **Invariant:** body paragraph count == `len(sources)`, same order, one paragraph per entry. Verify before writing. The page cites `[[source page slugs]]`, not raw files.
 
-Read `wiki/overview.md` and check the `sources:` frontmatter list:
-- **If `[[<slug>]]` is already in `sources:`** (refresh case): update the `updated:` date only. Write the file. Stop — do not add another entry or another paragraph.
-- **If `sources: []` (first source ever ingested):** replace the placeholder body (the `_No sources ingested yet..._` paragraph) with an opening overview paragraph describing this source and what it contributes. Cite `[[<slug>]]`. Update `sources:` to `sources:\n  - "[[<slug>]]"`.
-- **If `sources:` already has entries but does not include `[[<slug>]]`:** **append a new dedicated paragraph** covering what the new source contributes relative to existing ones — do not merge into an existing paragraph, do not skip writing one. Cite `[[<slug>]]`. Append `  - "[[<slug>]]"` to the `sources:` list.
+Per slug being ingested:
+- Slug already in `sources:` (refresh) → update `updated:` only. Stop.
+- `sources: []` (first source) → replace the `_No sources ingested yet..._` placeholder with an opening paragraph citing `[[<slug>]]`; set `sources: ["[[<slug>]]"]`.
+- New slug → append a dedicated paragraph (don't merge) describing what this source adds; append `- "[[<slug>]]"` to `sources:`.
 
-**Multi-product:** treat the umbrella AND each sub as separate entries. Each gets its own `sources:` line and its own paragraph (umbrella first, then subs in `subpages:` order). The umbrella's paragraph may wikilink each sub; each sub's paragraph focuses on what that product specifically adds, with a short link back to the umbrella.
-
-Sanity check: post-write paragraph count must equal `len(sources)`. Update the `updated:` date. Write the file. This page cites `[[source page slugs]]`, not raw files directly.
+**Multi-product:** umbrella and each sub are separate entries. Umbrella first, subs in `subpages:` order. Umbrella's paragraph may wikilink each sub; sub paragraphs link back to the umbrella.
 
 **Step 6 — Append to `wiki/log.md`** (newest at top):
 ```
@@ -228,38 +134,20 @@ Sanity check: post-write paragraph count must equal `len(sources)`. Update the `
 - Created: wiki/sources/<slug>.md
 - Updated: wiki/index.md, wiki/overview.md, wiki/log.md, raw/<type>/README.md, inbox.md
 ```
-For unified pages, extend the Updated line and add:
-```
-- Updated: wiki/index.md, wiki/overview.md, wiki/log.md, raw/web/README.md, raw/github/README.md, inbox.md
-- Companion: raw/github/<companion-slug>.md
-```
 
-For multi-product, one log entry covers the whole ingest:
-```
-## YYYY-MM-DD | ingest | <slug> | multi-product (<N> products): <comma-separated names>
+Variants:
+- **Unified:** Updated line includes both `raw/web/README.md` and `raw/github/README.md`. Add `- Companion: raw/github/<companion-slug>.md` (required).
+- **Multi-product:** title is `multi-product (<N> products): <names>`; Created line lists umbrella + every sub.
 
-- Created: wiki/sources/<slug>.md, wiki/sources/<slug>-<product1>.md, ...
-- Updated: wiki/index.md, wiki/overview.md, wiki/log.md, raw/web/README.md, inbox.md
-```
+**Step 7 — Update `raw/<type>/README.md`** — update the row in-place if it exists, else append using the row format from the type's protocol. Multi-product still produces one raw web file → one row.
 
-The `- Companion:` line is required on every unified web+github ingest entry.
+**Step 8 — Move inbox line** from `## Pending` to `## Completed`. Append `<!-- ingested YYYY-MM-DD -->`. If `auto_mark_complete: {{AUTO_MARK_COMPLETE}}`, also flip `[ ]` → `[x]`.
 
-**Step 7 — Update `raw/<type>/README.md`.**
-- If a row for `<slug>` already exists: update the fetch date in-place. Do not add a second row.
-- If no row exists: append the new row using the row format from the source type protocol below.
-- Multi-product still produces **one** raw web file (the umbrella's), so still one row.
+**Step 9 — Git** — skip. See SKILL.md Git policy.
 
-**Step 8 — Move inbox line.**
-Move the URL from `## Pending` to `## Completed`. Append `<!-- ingested YYYY-MM-DD -->`.
-If `auto_mark_complete: {{AUTO_MARK_COMPLETE}}`, also flip `[ ]` → `[x]`.
+### Merge rules (overview.md)
 
-**Step 9 — Git (no agent commits)**  
-Skip. Do not run `git commit` for this ingest. See **Git — never auto-commit** above.
-
-### Merge rules (updating `wiki/overview.md`)
-
-- Add new facts; do not duplicate.
-- On a conflict: insert a `> **Conflict:**` block citing both sources. Source authority order: official docs > GitHub README > YouTube (official channel) > blogs/secondary. Do not silently overwrite.
+Add new facts; don't duplicate. On conflict: insert a `> **Conflict:**` block citing both sources. Source authority: official docs > GitHub README > YouTube (official channel) > blogs / secondary.
 
 ---
 
@@ -283,72 +171,29 @@ Skip. Do not run `git commit` for this ingest. See **Git — never auto-commit**
 
 ## Frontmatter rules
 
-**Source pages** (`wiki/sources/*.md`) — MUST NOT include `sources:`:
+**All source pages** (`wiki/sources/*.md`) carry these fields. **MUST NOT** include `sources:` — source pages do not cite themselves.
+
 ```yaml
 ---
 type: source
-source_url: <original URL of the source>
+source_url: <canonical URL of the source>
 tags: []
 related: []
-product: <product-slug>
+product: <product-slug>      # see Step 2 derivation rules
 detail_level: {{DETAIL_LEVEL}}
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 ---
 ```
 
-**Unified source pages** (web + companion GitHub) — same as above, plus two optional fields:
-```yaml
----
-type: source
-source_url: https://<domain>/
-companion_urls:
-  - https://github.com/<org>/<repo>
-raw_files:
-  - ../../raw/web/<domain>.md
-  - ../../raw/github/<org>-<repo>.md
-tags: []
-related: []
-product: <product-slug>
-detail_level: standard
-created: YYYY-MM-DD
-updated: YYYY-MM-DD
----
-```
-`companion_urls` and `raw_files` are absent on all non-unified pages.
+**Shape-specific additions** (mutually exclusive — lint Check #7 enforces):
 
-**Multi-product umbrella pages** (deep web with ≥2 products):
-```yaml
----
-type: source
-source_url: https://<domain>/
-subpages:
-  - <slug>-<product1>
-  - <slug>-<product2>
-tags: []
-related: []
-product: <slug>           # the umbrella slug itself (e.g. langchain.com)
-detail_level: deep
-created: YYYY-MM-DD
-updated: YYYY-MM-DD
----
-```
-
-**Multi-product sub-pages** (one per product under an umbrella):
-```yaml
----
-type: source
-source_url: https://<domain>/<product-path>     # deep-link if available, else the umbrella URL
-parent_slug: <slug>
-tags: []
-related: []
-product: <product-slug>   # e.g. langgraph
-detail_level: deep
-created: YYYY-MM-DD
-updated: YYYY-MM-DD
----
-```
-`subpages:`, `parent_slug:`, `companion_urls:`, and `raw_files:` are mutually exclusive. Lint check #7 enforces this.
+| Shape | Add |
+|---|---|
+| Standalone | nothing |
+| Unified web+github | `companion_urls: [https://github.com/<org>/<repo>]` and `raw_files: [../../raw/web/<domain>.md, ../../raw/github/<org>-<repo>.md]` |
+| Multi-product umbrella | `subpages: [<slug>-<product1>, <slug>-<product2>, ...]`. Umbrella's `product:` is the umbrella slug itself (e.g. `langchain.com`). |
+| Multi-product sub | `parent_slug: <umbrella-slug>`. Sub's `product:` is the product's own slug (e.g. `langgraph`). |
 
 **Overview page** (`wiki/overview.md`):
 ```yaml
@@ -367,18 +212,15 @@ sources:
 
 ## Refresh workflow
 
-To re-fetch an already-ingested source:
+Add `<!-- refresh -->` to a source's `## Completed` line in `inbox.md`, then run `/pin-llm-wiki run`. The run command re-fetches each tagged source, compares (after stripping date-shaped frontmatter), and re-renders if changed.
 
-1. Add `<!-- refresh -->` to its `## Completed` line in `inbox.md`.
-2. Run `/pin-llm-wiki run`.
+Refresh shape rules (additive within shape):
+- **Multi-product umbrella** can gain new sub-pages when discovery finds a new product. Existing subs are never auto-dropped (use `remove <sub-slug>`).
+- **Sub-page** refresh is rejected — refresh the umbrella instead.
+- **Standalone / unified** pages are not auto-promoted to multi-product even if discovery returns ≥2 products. That shape change requires `remove + re-add`.
+- **Unified** pages do not gain or lose companions on refresh.
 
-The run command scans `## Completed` for `<!-- refresh -->` and:
-1. Re-fetches the source using the same protocol. For unified pages (with `raw_files:` frontmatter), re-fetches each raw file independently using its path-prefix protocol (`raw/web/` → web, `raw/github/` → github). For multi-product umbrellas (with `subpages:` frontmatter), re-fetches the single web raw file at the same `deep` level. Refresh on a sub-page is rejected — refresh the umbrella instead.
-2. Strips any frontmatter field whose value matches `YYYY-MM-DD` or an ISO 8601 timestamp pattern from both copies before comparing. If unchanged, logs `refresh: <slug> (no change)` and stops.
-3. If changed: overwrites the changed raw file(s), re-runs ingest steps 2–5 and 7 (updates wiki pages; skips step 6 log, inbox-move, and commit), appends a log entry `refresh: <slug> | content updated`. For unified pages, derive companion context from the existing source page's `raw_files:` list and pass it to ingest so the unified body is preserved. For multi-product umbrellas, build `products` as the **union of (a) existing subs reconstructed from `subpages:` + each sub's `product:` and `source_url:`, and (b) newly-discovered products parsed from the new raw file's `## Product:` sections** that are not already represented. New entries become new sub-pages (additive); existing subs whose products are missing in the new discovery are kept (logged as INFO).
-4. For unified and multi-product pages: if some raw fetches fail, logs `partial refresh: <slug> | fetch errors: <list>` and proceeds with the raws that succeeded. If all fail, aborts and logs an error.
-5. Refresh shape rules: a multi-product umbrella **can gain new sub-pages on refresh** (additive — when the upstream gains a product, or the original ingest missed one). A multi-product umbrella **never loses** sub-pages on refresh (use `remove <sub-slug>` to drop a sub manually). Standalone or unified pages are **not** auto-promoted to multi-product even when discovery finds ≥2 products — that shape change still requires `remove + re-add` (logged as an INFO suggestion). Companion repos on unified pages are not added or dropped on refresh either. `raw_files:` and `companion_urls:` are always preserved as-is.
-6. Removes `<!-- refresh -->` from the inbox line, appends `<!-- refreshed YYYY-MM-DD -->`, preserves `[ ]`/`[x]` state. Do not run `git commit` (see **Git — never auto-commit**).
+For exact mechanics (companion-context reconstruction, products-list merge with stale-entry preservation, partial-failure handling) see `skill/run.md` Pass 2.
 
 ---
 
@@ -452,16 +294,4 @@ Agents (human-directed or autonomous) may suggest URLs for later ingest without 
 
 ## Consolidating split-product sources
 
-If lint Check #11 flags a split-product wiki (separate web and github source pages share `product:`), the new ingestion flow produces a single unified page per product. To consolidate:
-
-1. `/pin-llm-wiki remove <github-slug>` to soft-delete the standalone github source page (raw file is archived too).
-2. Re-add the web URL with `/pin-llm-wiki run` (or queue + run). The web fetch protocol's companion-discovery step will pick up the GitHub repo automatically and the ingest will produce a unified source page citing both raw files.
-3. Run `/pin-llm-wiki lint` to verify no dangling `[[<github-slug>]]` references remain.
-
-If you prefer not to re-fetch, edit by hand:
-1. Add `companion_urls` and `raw_files` frontmatter to the web source page.
-2. Merge github body sections into the web page using inline citations `(../../raw/github/<org>-<repo>.md)`.
-3. Move `wiki/sources/<github-slug>.md` → `wiki/.archive/sources/`. Keep `raw/github/<github-slug>.md` in place — it is now the companion raw.
-4. Edit `wiki/index.md`: remove the github row, decrement source count.
-5. Edit `wiki/overview.md`: remove `[[<github-slug>]]` from `sources:` list; delete its paragraph (the invariant is `len(sources) == paragraph_count`).
-6. On any source page whose `related:` references `[[<github-slug>]]`, replace with `[[<web-slug>]]` (or remove if `[[<web-slug>]]` is already there).
+If lint Check #11 fires (web + github source pages share `product:` but are not unified): `/pin-llm-wiki remove <github-slug>`, then re-add the web URL with `/pin-llm-wiki run`. The unified-ingest flow regenerates a single source page citing both raw files. Run `/pin-llm-wiki lint` afterward to confirm no dangling `[[<github-slug>]]` references remain. Manual consolidation steps (without re-fetching) are documented in `skill/lint.md`.
