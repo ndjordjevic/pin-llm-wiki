@@ -25,6 +25,16 @@ npx skills@latest add ndjordjevic/pin-llm-wiki
 
 More options (agents, global scope, listing): [skills.sh](https://skills.sh) and `npx skills@latest --help`.
 
+## Update
+
+From the same directory where you installed the skill (for example your wiki repo), refresh it after upstream changes:
+
+```bash
+npx skills@latest update pin-llm-wiki --agent claude-code cursor github-copilot
+```
+
+Adjust `--agent` for only the editors you use, or omit flags if your Skills CLI defaults match how you installed it. See `npx skills@latest update --help` for global installs and other agents.
+
 ## Quickstart
 
 Inside the repo that should become a wiki:
