@@ -166,6 +166,12 @@ raw/
 
    Expect **pin-llm-wiki** in the output.
 
+   Alternate (when your `npx` handles the `skills` binary correctly):
+
+   ```bash
+   npx skills@latest add . --list
+   ```
+
 2. After you push `main`, optionally confirm against GitHub:
 
    ```bash
@@ -174,6 +180,18 @@ raw/
 
    (Until you push, the clone may still show an older `description`; re-run after publish.)
 
+   Alternate:
+
+   ```bash
+   npx skills@latest add ndjordjevic/pin-llm-wiki --list
+   ```
+
 3. Submit for listing: **[theskills.directory/submit](https://theskills.directory/submit)** (GitHub sign-in; preferred over duplicating the skill in a fork of [theskillsdirectory/skills](https://github.com/theskillsdirectory/skills)).
 
-**Optional (GitHub repo settings):** topics such as `agent-skill`, `claude-skill`, `cursor-skill`, `llm-wiki`, `knowledge-management`, `research`, `documentation`, and a short repository description aligned with `SKILL.md`’s `description` line.
+**Optional (GitHub repo settings):**
+
+- **Description** (Settings → General): paste:
+
+  > A skill that automates the Karpathy-style LLM Wiki: ingest URLs (web/GitHub/YouTube) into a cited, cross-referenced knowledge base with linting. Works with Claude, Cursor, and Copilot via https://skills.sh
+
+- **Topics:** e.g. `agent-skill`, `claude-skill`, `cursor-skill`, `llm-wiki`, `knowledge-management`, `research`, `documentation`.

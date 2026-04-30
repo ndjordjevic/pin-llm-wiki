@@ -1,6 +1,6 @@
 ---
 name: pin-llm-wiki
-description: "Turn web, GitHub, and YouTube URLs into a cited, wikilinked markdown wiki (inbox + raw captures + lint)—use when building a personal or project knowledge base; invoke with `/pin-llm-wiki` (init, run, lint, queue, remove)."
+description: "Automates the Karpathy LLM Wiki workflow: turns web, GitHub, and YouTube URLs into well-structured, citable, wikilinked pages with automatic linting and sourcing — invoke with /pin-llm-wiki"
 version: "1.0.0"
 last_updated: "2026-04-30"
 compatible_agents:
