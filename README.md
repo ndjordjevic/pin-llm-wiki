@@ -1,6 +1,6 @@
 # pin-llm-wiki
 
-A multi-editor skill that automates the [Karpathy LLM Wiki pattern](https://x.com/karpathy/status/1805977730336702875): drop in URLs, get a local, citable, cross-referenced wiki that agents can read before answering.
+A multi-editor skill that automates the [Karpathy LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f): drop in URLs, get a local, citable, cross-referenced wiki that agents can read before answering.
 
 **Where it runs:** [Claude Code](https://claude.com/product/claude-code) (slash commands), [GitHub Copilot](https://github.com/features/copilot) and [Cursor](https://cursor.com) (install the skill + follow the same workflows; see below).
 
