@@ -28,13 +28,13 @@ More options (agents, global scope, listing): [skills.sh](https://skills.sh) and
 
 ## Update
 
-From the same directory where you installed the skill (for example your wiki repo), refresh it after upstream changes:
+From the same directory where you installed the skill (for example your wiki repo):
 
 ```bash
-npx skills@latest update pin-llm-wiki --agent claude-code cursor github-copilot
+npx skills@latest update pin-llm-wiki
 ```
 
-Adjust `--agent` for only the editors you use, or omit flags if your Skills CLI defaults match how you installed it. See `npx skills@latest update --help` for global installs and other agents.
+`skills update` may recreate directories for agents you do not use; delete those folders manually if you want a minimal tree. See `npx skills@latest update --help` for `-g` / project scope.
 
 ## Quickstart
 
