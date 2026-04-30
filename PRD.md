@@ -1,7 +1,7 @@
 # pin-llm-wiki — Product Requirements Document
 
 **Date:** 2026-04-24
-**Status:** Phase 1 complete — skill files implemented, dogfood-validated, bug-fix pass done. Skill files live in `~/.claude/skills/pin-llm-wiki/` (not tracked in this git repo).
+**Status:** Phase 1 complete — skill files implemented, dogfood-validated, bug-fix pass done. Canonical skill sources are tracked in this repo under **`skills/pin-llm-wiki/`**; `install.sh` symlinks that tree to `~/.claude/skills/pin-llm-wiki/`, `~/.copilot/skills/`, and `~/.cursor/skills/` (or project-local equivalents).
 **Phase:** 1 (Skills-only MVP)
 **Inputs:** `research.md`, `manual-pass-plan.md`, `manual-pass-findings.md`
 
@@ -318,7 +318,7 @@ Human adds the tag to a previously-ingested line under `## Completed` (typically
 
 ### 5.1 Packaging (Phase 1)
 
-- Skill at `~/.claude/skills/pin-llm-wiki/SKILL.md` (and mirrored to `~/.copilot/skills/` and `~/.cursor/skills/` via `install.sh`) plus supporting `.md` files per subcommand. Project install symlinks the same tree under `.claude/skills/`, `.copilot/skills/`, and `.cursor/skills/` in the working directory.
+- Skill at `skills/pin-llm-wiki/SKILL.md` in this repo (symlinked to `~/.claude/skills/pin-llm-wiki/SKILL.md`, `~/.copilot/skills/`, and `~/.cursor/skills/` via `install.sh`) plus supporting `.md` files per subcommand. Project install symlinks the same tree under `.claude/skills/`, `.copilot/skills/`, and `.cursor/skills/` in the working directory.
 - **Claude Code:** triggered by `/pin-llm-wiki <subcommand>` in the CLI agent session.
 - **Cursor / GitHub Copilot:** the same `SKILL.md` dispatch; Cursor also discovers skills per [Cursor skills docs](https://cursor.com/docs/context/skills). For repo-level behavior without a global skill, `init` emits `AGENTS.md` and `CLAUDE.md` — all major tools (Cursor, GitHub Copilot, Copilot CLI, Claude Code) load `AGENTS.md` automatically.
 - Generated wiki repos are self-contained — their agent instruction files load the workflow into a fresh session in that repo.

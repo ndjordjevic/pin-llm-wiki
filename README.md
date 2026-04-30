@@ -6,10 +6,42 @@ A multi-editor skill that automates the [Karpathy LLM Wiki pattern](https://x.co
 
 ## Install
 
+### Symlinks (this repo)
+
+Canonical skill files live under **[`skills/pin-llm-wiki/`](skills/pin-llm-wiki/)**.
+
 ```bash
 ./install.sh           # symlinks to ~/.claude/skills/, ~/.copilot/skills/, ~/.cursor/skills/
 ./install.sh project   # symlinks to .claude/skills/, .copilot/skills/, .cursor/skills/ in cwd
-./install.sh /path/to   # one explicit parent dir (creates /path/to/pin-llm-wiki → skill)
+./install.sh /path/to  # one explicit parent dir (creates /path/to/pin-llm-wiki → skills/pin-llm-wiki)
+```
+
+### Via [skills.sh](https://skills.sh) / Skills CLI ([vercel-labs/skills](https://github.com/vercel-labs/skills))
+
+Install the **`skills`** npm package. On some npm versions, **`npx skills …` is parsed incorrectly**; use either form below.
+
+**Reliable (recommended):**
+
+```bash
+npm exec --yes --package=skills -- skills add ndjordjevic/pin-llm-wiki
+```
+
+Pin a single skill if the repo grows:
+
+```bash
+npm exec --yes --package=skills -- skills add ndjordjevic/pin-llm-wiki --skill pin-llm-wiki
+```
+
+**Alternate (when your `npx` supports it):**
+
+```bash
+npx skills@latest add ndjordjevic/pin-llm-wiki
+```
+
+Use **`-g`** for a user-global install, **`-a <agent>`** to target agents (e.g. `claude-code`, `cursor`). Optional explicit path:
+
+```bash
+npm exec --yes --package=skills -- skills add https://github.com/ndjordjevic/pin-llm-wiki/tree/main/skills/pin-llm-wiki
 ```
 
 ## Usage
@@ -123,3 +155,25 @@ raw/
 | GitHub | `gh` CLI | `raw/github/<org>-<repo>.md` |
 | YouTube | `yt-dlp` | `raw/youtube/<video-id>-<slug>.md` |
 | Web | `WebFetch` | `raw/web/<slug>.md` |
+
+## Publishing to [theskills.directory](https://theskills.directory)
+
+1. Verify locally from this repo root:
+
+   ```bash
+   npm exec --yes --package=skills -- skills add . --list
+   ```
+
+   Expect **pin-llm-wiki** in the output.
+
+2. After you push `main`, optionally confirm against GitHub:
+
+   ```bash
+   npm exec --yes --package=skills -- skills add https://github.com/ndjordjevic/pin-llm-wiki --list
+   ```
+
+   (Until you push, the clone may still show an older `description`; re-run after publish.)
+
+3. Submit for listing: **[theskills.directory/submit](https://theskills.directory/submit)** (GitHub sign-in; preferred over duplicating the skill in a fork of [theskillsdirectory/skills](https://github.com/theskillsdirectory/skills)).
+
+**Optional (GitHub repo settings):** topics such as `agent-skill`, `claude-skill`, `cursor-skill`, `llm-wiki`, `knowledge-management`, `research`, `documentation`, and a short repository description aligned with `SKILL.md`’s `description` line.

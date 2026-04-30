@@ -1,12 +1,41 @@
 ---
 name: pin-llm-wiki
-description: "automate the LLM wiki pipeline: fetch → ingest → cite → lint a personal knowledge base"
+description: "Turn web, GitHub, and YouTube URLs into a cited, wikilinked markdown wiki (inbox + raw captures + lint)—use when building a personal or project knowledge base; invoke with `/pin-llm-wiki` (init, run, lint, queue, remove)."
+version: "1.0.0"
+last_updated: "2026-04-30"
+compatible_agents:
+  tested:
+    - claude
+  untested:
+    - cursor
+    - copilot
+    - vscode
+    - codex
+categories:
+  - research
+  - documentation
+  - productivity
+job_roles:
+  - developer
+  - researcher
+author: Nenad Djordjevic
+github: ndjordjevic
+license: apache-2.0
 trigger: /pin-llm-wiki
 ---
 
 # /pin-llm-wiki
 
 Automates Karpathy's LLM wiki pattern: drop URLs in `inbox.md`, the skill fetches, ingests, and maintains a cited, agent-readable knowledge base.
+
+## Trigger phrases
+
+- **`/pin-llm-wiki`** (with subcommands: `init`, `run`, `lint`, `queue`, `remove`)
+- “Pin this YouTube video to my LLM wiki”
+- “Ingest these research links into my wiki”
+- “Run pin-llm-wiki lint on this knowledge base”
+- “Queue these URLs, then batch-process the inbox”
+- “Initialize a new Karpathy-style wiki with pin-llm-wiki”
 
 ```
 inbox.md (human drops URLs)
@@ -30,7 +59,7 @@ a healthy, queryable knowledge base
 
 ## Skill directory
 
-This SKILL.md and all sibling files (`run.md`, `init.md`, `lint.md`, `remove.md`, `queue.md`, `ingest.md`, `templates/...`) live inside the skill directory: `~/.claude/skills/pin-llm-wiki/`, `~/.copilot/skills/pin-llm-wiki/`, `~/.cursor/skills/pin-llm-wiki/`, or the project-local `.claude/skills/` / `.copilot/skills/` / `.cursor/skills/` equivalents. All `templates/...` and sibling-file paths in this skill are relative to whichever skill directory the loading tool used.
+This SKILL.md and all sibling files (`run.md`, `init.md`, `lint.md`, `remove.md`, `queue.md`, `ingest.md`, `templates/...`) live inside the skill directory: `~/.claude/skills/pin-llm-wiki/`, `~/.copilot/skills/pin-llm-wiki/`, `~/.cursor/skills/pin-llm-wiki/`, or the project-local `.claude/skills/` / `.copilot/skills/` / `.cursor/skills/` equivalents. In this repository the canonical copy is **`skills/pin-llm-wiki/`**. All `templates/...` and sibling-file paths in this skill are relative to whichever skill directory the loading tool used.
 
 ## Dispatch
 

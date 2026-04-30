@@ -7,7 +7,7 @@
 
 set -euo pipefail
 
-SKILL_DIR="$(cd "$(dirname "$0")/skill" && pwd)"
+SKILL_DIR="$(cd "$(dirname "$0")/skills/pin-llm-wiki" && pwd)"
 SKILL_NAME="pin-llm-wiki"
 
 install_symlink() {
