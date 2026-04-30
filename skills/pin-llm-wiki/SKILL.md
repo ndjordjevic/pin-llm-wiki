@@ -10,7 +10,6 @@ compatible_agents:
     - cursor
     - copilot
   untested:
-    - vscode
     - codex
 
 categories:
