@@ -16,9 +16,9 @@ inbox.md            ← drop new URLs here
 
 ## Adding sources
 
-**Ingest immediately** (fetch + write wiki page in one step):
+**Ingest immediately** (auto-queues if missing, then fetches + writes the wiki page):
 ```
-/pin-llm-wiki add https://github.com/org/repo
+/pin-llm-wiki run https://github.com/org/repo
 ```
 
 **Queue for later** (adds to inbox, no fetch — good for mid-task suggestions):

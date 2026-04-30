@@ -1,21 +1,19 @@
-# run / add — process inbox or ingest a single URL
+# run — process inbox or ingest a single URL
 
 (Skill-directory paths and the `.pin-llm-wiki.yml` Guard are defined in `SKILL.md` — they apply here.)
 
 ## Invocation forms
 
 ```
-/pin-llm-wiki run               ← batch: process every pending item
-/pin-llm-wiki run <url>         ← single: process only this URL from Pending
-/pin-llm-wiki add <url> [tags]  ← single: queue (if not already) then ingest atomically
+/pin-llm-wiki run                       ← batch: process every pending item
+/pin-llm-wiki run <url> [tags]          ← single: queue if missing, then ingest
 ```
 
-`add` and `run <url>` produce identical filesystem state for the same URL. `add` is the convenience entry point — if the URL is missing from inbox it is queued automatically, then a single-URL ingest runs.
+In single-URL mode (`run <url>`), if the URL isn't already in `inbox.md`, it is appended to `## Pending` (with any tags from the invocation) and then ingested. Tags supplied with the invocation are **ignored** if the URL is already in `## Pending` — the existing line's tags win (the user can edit `inbox.md` to change them).
 
 **Single-URL error cases** (stop immediately):
 - URL found under `## Completed` (already ingested) → "URL already completed. To re-fetch, add `<!-- refresh -->` to its inbox line and run `/pin-llm-wiki run` again."
 - URL found under `## Pending` with `<!-- skip -->` → "URL is marked `<!-- skip -->` — remove the tag from `inbox.md` to process it."
-- (`run <url>` only) URL not found under `## Pending` → "URL not found in Pending: `<url>`. Add it with `/pin-llm-wiki queue <url>` first, or use `/pin-llm-wiki add <url>` to queue+ingest in one step."
 
 ---
 
@@ -26,7 +24,6 @@ Read `.pin-llm-wiki.yml` and extract: `domain`, `detail_level`, `source_types`, 
 Set `today` = current date in `YYYY-MM-DD` format.
 
 Set `mode`:
-- `add` invocation → `mode = "add"`
 - `run <url>` invocation → `mode = "single"`
 - `run` (no arg) invocation → `mode = "batch"`
 
@@ -34,18 +31,16 @@ Initialize a **run log** (empty list): `{pass, url, slug, outcome}` entries appe
 
 ---
 
-## Pass 0 — Queue (mode = "add" only)
+## Pass 0 — Auto-queue (mode = "single" only)
 
-Skip in `single` and `batch` modes.
+Skip in `batch` mode.
 
 Read `inbox.md`. Locate the URL:
-- **Already under `## Completed`:** stop with the "already completed" error above.
-- **Already under `## Pending`:** use the existing line as-is — do not append a duplicate. Inline tags supplied with `add` are **ignored** in favor of the existing line's tags (the user can edit inbox.md to change tags).
-- **Not in inbox.md:** append a new line to `## Pending`: `- [ ] <url> <any tags from invocation>`.
+- **Under `## Completed`** → stop with the "already completed" error above.
+- **Under `## Pending`** → use the existing line as-is. Inline tags from the invocation are **ignored** in favor of the existing line's tags.
+- **Not in inbox.md** → append `- [ ] <url> <any tags from invocation>` to `## Pending`.
 
-Re-read `inbox.md` after any mutation.
-
-Then fall through to Pass 1 in single-URL mode (treat the queued URL as the single target).
+Re-read `inbox.md` after the mutation. Then fall through to Pass 1.
 
 ---
 
@@ -53,7 +48,7 @@ Then fall through to Pass 1 in single-URL mode (treat the queued URL as the sing
 
 Read `inbox.md`. Collect all lines matching `- [ ] ...` under `## Pending`, in order top-to-bottom.
 
-**In `single` or `add` mode:** filter the collected lines to only the one whose URL matches the target. (Error cases above already fired before this point.)
+**In `single` mode:** filter the collected lines to only the one whose URL matches the target. (Error cases above already fired before this point.)
 
 For each such line:
 
@@ -116,7 +111,7 @@ Append `{pass: 1, url, slug, outcome: ingested}` to run log.
 
 ## Pass 2 — Refresh tagged items
 
-Skip in `add` mode (single-URL ingests don't trigger refresh sweeps).
+Skip in `single` mode (single-URL ingests don't trigger refresh sweeps).
 
 Re-read `inbox.md`. Collect all lines under `## Completed` containing `<!-- refresh -->` (any `[ ]` / `[x]` state), in order. For each, run the **refresh flow**:
 
@@ -212,7 +207,7 @@ Append `{pass: 2, url, slug, outcome: refreshed | no-change}` to run log.
 - `auto_lint: batch` → read `<skill-dir>/lint.md` and run the full lint. Include report in summary below.
 - `auto_lint: never` or `per-ingest` → skip lint here. (Per-ingest lint is suppressed inside `run` — it never fires per-item; it fires once at the end via `batch`, or not at all.)
 
-In `add` mode, `auto_lint: per-ingest` **does** trigger lint after the single ingest (the per-ingest semantics still apply for the convenience entry point).
+In `single` mode, `auto_lint: per-ingest` **does** trigger lint after the single ingest (per-ingest semantics apply for one-off URL ingests).
 
 ---
 
@@ -237,7 +232,7 @@ Pass 2 — refresh:
 [Lint: skipped (auto_lint: <never|per-ingest>)]
 ```
 
-### `single` or `add` mode
+### `single` mode
 
 ```
 Ingested: <url>

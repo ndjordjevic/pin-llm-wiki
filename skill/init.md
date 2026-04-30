@@ -4,7 +4,7 @@
 
 ## Guard (inverse: must NOT already exist)
 
-If `.pin-llm-wiki.yml` exists in the current working directory, **stop**: *"A wiki already exists here (`.pin-llm-wiki.yml` found). Use `/pin-llm-wiki add <url>` to ingest new sources or `/pin-llm-wiki run` to process pending inbox items."* Only proceed if absent.
+If `.pin-llm-wiki.yml` exists in the current working directory, **stop**: *"A wiki already exists here (`.pin-llm-wiki.yml` found). Use `/pin-llm-wiki run <url>` to ingest a new source or `/pin-llm-wiki run` to process pending inbox items."* Only proceed if absent.
 
 ---
 
@@ -274,7 +274,7 @@ Wiki scaffolded in <current directory>.
     overview.md                               rolling cross-source overview
     log.md                                    append-only history
 
-Next: /pin-llm-wiki add <url>
+Next: /pin-llm-wiki run <url>
 
 Note: if you manually edit AGENTS.md, copy the updated body into
 .cursor/rules/wiki-instructions.mdc (preserve the frontmatter at the top) and

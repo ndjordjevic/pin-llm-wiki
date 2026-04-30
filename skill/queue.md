@@ -4,7 +4,7 @@
 
 ## Purpose
 
-`queue` lets any agent add one or more URLs to `inbox.md`'s `## Pending` section **without fetching or ingesting**. Use it to surface a potentially relevant source for later human review. Use `add` instead when you actually want to ingest now.
+`queue` lets any agent add one or more URLs to `inbox.md`'s `## Pending` section **without fetching or ingesting**. Use it to surface a potentially relevant source for later human review. Use `/pin-llm-wiki run <url>` instead when you actually want to ingest now (it auto-queues missing URLs and ingests in one step).
 
 ---
 
@@ -56,7 +56,7 @@ Queued for ingest — <wiki-domain> wiki
   Skipped:  N (already pending or completed)
 
 Next step: run `/pin-llm-wiki run` to ingest all pending items,
-           or `/pin-llm-wiki add <url>` to ingest a single item immediately.
+           or `/pin-llm-wiki run <url>` to ingest a single item immediately.
 ```
 
 List each added URL on its own indented line under "Added:".
@@ -67,5 +67,5 @@ List each skipped URL with its reason under "Skipped:".
 ## Notes
 
 - `queue` never runs a fetch, writes a raw file, or touches any wiki page.
-- Any agent may call `queue`. It is the only inbox mutation an agent may perform outside of `add`, `run`, and `remove`.
+- Any agent may call `queue`. It is the only inbox mutation an agent may perform outside of `run` and `remove`.
 - No agent commits — see SKILL.md Git policy.

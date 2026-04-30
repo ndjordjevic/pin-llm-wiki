@@ -26,18 +26,18 @@ A multi-editor skill that automates the [Karpathy LLM Wiki pattern](https://x.co
 
 Runs a short interview (domain, detail level, source types, git settings), then scaffolds `inbox.md`, `wiki/`, `raw/`, `AGENTS.md`, and `.pin-llm-wiki.yml` in the current directory.
 
-### Add a single source
+### Ingest a single source
 
 ```
-/pin-llm-wiki add https://github.com/org/repo
-/pin-llm-wiki add https://example.com
+/pin-llm-wiki run https://github.com/org/repo
+/pin-llm-wiki run https://example.com
 ```
 
-Fetches, ingests, and writes `wiki/sources/<slug>.md`. Updates index, overview, log, and inbox in one shot.
+Fetches, ingests, and writes `wiki/sources/<slug>.md`. If the URL isn't already in `inbox.md`, it is auto-queued first. Updates index, overview, log, and inbox in one shot.
 
 For **web sources**, the skill automatically discovers the product's GitHub repo from the page content and fetches it as a companion. The result is a single unified source page (`wiki/sources/<slug>.md`) that covers the product website and the GitHub repo together — one inbox entry, one source page. Use `<!-- no-companion -->` to suppress this or `<!-- companion:github.com/<org>/<repo> -->` to override the discovered repo.
 
-**Deep multi-product mode.** When a web source is ingested at `<!-- detail:deep -->` (or `deep` is the wiki default) and the discovery step finds a multi-product platform — ≥2 products, each with its own docs subsection or its own GitHub repo — the skill writes one **umbrella** page plus one **sub-page per product**. All pages cite the same single raw file. Example: `https://www.langchain.com/` becomes `wiki/sources/langchain.com.md` (umbrella) plus `wiki/sources/langchain.com-langchain.md`, `wiki/sources/langchain.com-langgraph.md`, `wiki/sources/langchain.com-langsmith.md`, `wiki/sources/langchain.com-deepagents.md`. The umbrella is a hub page (summary + `## Products` wikilinks); each sub-page covers its product in depth. Companion-github discovery is skipped in multi-product mode — promote a specific product to its own unified page later via a separate `add` with `<!-- companion:... -->` if you want full repo coverage.
+**Deep multi-product mode.** When a web source is ingested at `<!-- detail:deep -->` (or `deep` is the wiki default) and the discovery step finds a multi-product platform — ≥2 products, each with its own docs subsection or its own GitHub repo — the skill writes one **umbrella** page plus one **sub-page per product**. All pages cite the same single raw file. Example: `https://www.langchain.com/` becomes `wiki/sources/langchain.com.md` (umbrella) plus `wiki/sources/langchain.com-langchain.md`, `wiki/sources/langchain.com-langgraph.md`, `wiki/sources/langchain.com-langsmith.md`, `wiki/sources/langchain.com-deepagents.md`. The umbrella is a hub page (summary + `## Products` wikilinks); each sub-page covers its product in depth. Companion-github discovery is skipped in multi-product mode — promote a specific product to its own unified page later via a separate `run <url>` with `<!-- companion:... -->` if you want full repo coverage.
 
 **GitHub non-root pages are treated differently.** A URL like `https://github.com/org/repo/tree/main/path` is treated as a **single-page web source**, not a repo ingest. The skill captures only that exact page, skips docs discovery and companion-repo discovery, and writes a page-scoped web raw file such as `raw/web/org-repo-tree-main-path.md`.
 
@@ -47,10 +47,10 @@ Edit `inbox.md` → add URLs under `## Pending` → then:
 
 ```
 /pin-llm-wiki run              # process all pending items
-/pin-llm-wiki run <url>        # process only this one URL from Pending
+/pin-llm-wiki run <url>        # process only this one URL (auto-queues if missing)
 ```
 
-Ingests each pending URL in order, moves completed lines to `## Completed`. The single-URL form is useful when you want to ingest one specific source without touching the rest of the queue.
+Ingests each pending URL in order, moves completed lines to `## Completed`. The single-URL form is useful for ingesting one specific source without touching the rest of the queue.
 
 ### Inline inbox tags
 
