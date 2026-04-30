@@ -3,25 +3,29 @@ name: pin-llm-wiki
 description: "Automates the Karpathy LLM Wiki workflow: turns web, GitHub, and YouTube URLs into well-structured, citable, wikilinked pages with automatic linting and sourcing — invoke with /pin-llm-wiki"
 version: "1.0.0"
 last_updated: "2026-04-30"
+
 compatible_agents:
   tested:
     - claude
-  untested:
     - cursor
     - copilot
+  untested:
     - vscode
     - codex
+
 categories:
   - research
   - documentation
   - productivity
+
 job_roles:
   - developer
   - researcher
-author: Nenad Djordjevic
-github: ndjordjevic
-license: apache-2.0
-trigger: /pin-llm-wiki
+
+author: "Nenad Djordjevic"
+github: "ndjordjevic"
+license: "apache-2.0"
+trigger: "/pin-llm-wiki"
 ---
 
 # /pin-llm-wiki
