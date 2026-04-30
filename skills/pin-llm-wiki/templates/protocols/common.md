@@ -1,6 +1,6 @@
 ### Common protocol — URL parsing, slug derivation, inbox tags, companion fetch
 
-Shared subroutines used by `run.md` and `queue.md`. Read the relevant section instead of inlining.
+Shared subroutines used by `ingest.md` and `queue.md`. Read the relevant section instead of inlining.
 
 ---
 
@@ -55,8 +55,8 @@ After the URL on an inbox line, any of these HTML comments may appear:
 | `<!-- clone -->` | GitHub only; effective only at `deep`; triggers full `git clone`. |
 | `<!-- companion:github.com/<org>/<repo> -->` | Web only. Skip GitHub discovery; use this exact repo as companion. |
 | `<!-- no-companion -->` | Web only. Suppress companion GitHub fetch even if a repo is detected. |
-| `<!-- skip -->` | `run` skips the line on every invocation until the tag is removed. |
-| `<!-- refresh -->` | Persists in `## Completed`; triggers Pass 2 refresh on next `run`. |
+| `<!-- skip -->` | `ingest` skips the line on every invocation until the tag is removed. |
+| `<!-- refresh -->` | Persists in `## Completed`; triggers Pass 2 refresh on next `ingest`. |
 | `<!-- note: <text> -->` | Freeform rationale. Preserved as-is; ignored by all subcommands. |
 | `<!-- fetch-failed:<reason> -->` | Auto-added when fetch fails (e.g. `no-transcript`). |
 | `<!-- ingested YYYY-MM-DD -->` | Auto-added when the line moves to `## Completed`. |

@@ -4,7 +4,7 @@
 
 ## Guard (inverse: must NOT already exist)
 
-If `.pin-llm-wiki.yml` exists in the current working directory, **stop**: *"A wiki already exists here (`.pin-llm-wiki.yml` found). Use `/pin-llm-wiki run <url>` to ingest a new source or `/pin-llm-wiki run` to process pending inbox items."* Only proceed if absent.
+If `.pin-llm-wiki.yml` exists in the current working directory, **stop**: *"A wiki already exists here (`.pin-llm-wiki.yml` found). Use `/pin-llm-wiki ingest <url>` to ingest a new source or `/pin-llm-wiki ingest` to process pending inbox items."* Only proceed if absent.
 
 ---
 
@@ -65,7 +65,7 @@ Default: yes. Store as `GIT_INIT` (true/false).
 
 Ask:
 > "When should lint run?
->   `batch`       — once at the end of each `run` (recommended)
+>   `batch`       — once at the end of each `ingest` (recommended)
 >   `per-ingest`  — after every single source ingest
 >   `never`       — only when you explicitly run `/pin-llm-wiki lint`
 >
@@ -257,7 +257,7 @@ Wiki scaffolded in <current directory>.
     overview.md                               rolling cross-source overview
     log.md                                    append-only history
 
-Next: /pin-llm-wiki run <url>
+Next: /pin-llm-wiki ingest <url>
 
 Note: AGENTS.md is the single source of truth — all major AI tools (Claude Code,
 Cursor, GitHub Copilot, Copilot CLI) load it automatically.

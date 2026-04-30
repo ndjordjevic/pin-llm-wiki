@@ -41,9 +41,9 @@ Inside the repo that should become a wiki:
 
 ```bash
 /pin-llm-wiki init
-/pin-llm-wiki run https://github.com/org/repo
+/pin-llm-wiki ingest https://github.com/org/repo
 /pin-llm-wiki queue https://example.com
-/pin-llm-wiki run
+/pin-llm-wiki ingest
 /pin-llm-wiki lint
 ```
 
@@ -56,7 +56,7 @@ Use **`/pin-llm-wiki`** in the agent. Claude Code, Cursor, and GitHub Copilot al
 | Subcommand | What it does |
 |---|---|
 | **`init`** | Scaffold `inbox.md`, `.pin-llm-wiki.yml`, `AGENTS.md`, `wiki/`, and `raw/` |
-| **`run [url]`** | Ingest one URL, or omit `url` to process every pending item in `inbox.md` |
+| **`ingest [url]`** | Ingest one URL, or omit `url` to process every pending item in `inbox.md` |
 | **`queue <url> ...`** | Add URLs to `inbox.md` without fetching or ingesting |
 | **`lint`** | Validate wiki health and apply light non-destructive fixes |
 | **`remove <slug>`** | Soft-delete a source into `wiki/.archive/` |

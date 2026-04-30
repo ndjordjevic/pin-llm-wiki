@@ -33,7 +33,7 @@ Automates Karpathy's LLM wiki pattern: drop URLs in `inbox.md`, the skill fetche
 
 ## Trigger phrases
 
-- **`/pin-llm-wiki`** (with subcommands: `init`, `run`, `lint`, `queue`, `remove`)
+- **`/pin-llm-wiki`** (with subcommands: `init`, `ingest`, `lint`, `queue`, `remove`)
 - “Pin this YouTube video to my LLM wiki”
 - “Ingest these research links into my wiki”
 - “Run pin-llm-wiki lint on this knowledge base”
@@ -55,21 +55,21 @@ a healthy, queryable knowledge base
 | Command | Status |
 |---|---|
 | `init` | implemented |
-| `run [<url>]` | implemented (single-URL form auto-queues if URL is not already in inbox) |
+| `ingest [<url>]` | implemented (single-URL form auto-queues if URL is not already in inbox) |
 | `lint` | implemented |
 | `remove <slug>` | implemented |
 | `queue <url> [<url> ...]` | implemented |
 
 ## Skill directory
 
-This SKILL.md and all sibling files (`run.md`, `init.md`, `lint.md`, `remove.md`, `queue.md`, `ingest.md`, `templates/...`) live inside the skill directory: `~/.claude/skills/pin-llm-wiki/`, `~/.copilot/skills/pin-llm-wiki/`, `~/.cursor/skills/pin-llm-wiki/`, or the project-local `.claude/skills/` / `.copilot/skills/` / `.cursor/skills/` equivalents. In this repository the canonical copy is **`skills/pin-llm-wiki/`**. All `templates/...` and sibling-file paths in this skill are relative to whichever skill directory the loading tool used.
+This SKILL.md and all sibling files (`ingest.md`, `init.md`, `lint.md`, `remove.md`, `queue.md`, `ingest-protocol.md`, `templates/...`) live inside the skill directory: `~/.claude/skills/pin-llm-wiki/`, `~/.copilot/skills/pin-llm-wiki/`, `~/.cursor/skills/pin-llm-wiki/`, or the project-local `.claude/skills/` / `.copilot/skills/` / `.cursor/skills/` equivalents. In this repository the canonical copy is **`skills/pin-llm-wiki/`**. All `templates/...` and sibling-file paths in this skill are relative to whichever skill directory the loading tool used.
 
 ## Dispatch
 
 1. Identify the subcommand from the invocation args (the first word after `/pin-llm-wiki`).
 2. Route — read the sibling file in this skill directory and follow its instructions exactly:
    - **`init`** → `init.md` (no Guard required — it scaffolds the wiki)
-   - **`run`** → `run.md` (with or without a URL arg)
+   - **`ingest`** → `ingest.md` (with or without a URL arg)
    - **`lint`** → `lint.md`
    - **`remove`** → `remove.md`
    - **`queue`** → `queue.md`
@@ -78,4 +78,4 @@ This SKILL.md and all sibling files (`run.md`, `init.md`, `lint.md`, `remove.md`
 
 ## Git policy (canonical)
 
-**Never run `git commit` or `git push` after any subcommand** — `init`, `run`, `ingest`, `refresh`, `lint`, `remove`, `queue`, or any auto-fix — unless the human explicitly asked to commit in this conversation. Subcommand files reference this policy without restating it. The wiki's own `AGENTS.md` carries the same rule for downstream agents.
+**Never run `git commit` or `git push` after any subcommand** — `init`, `ingest`, `refresh`, `lint`, `remove`, `queue`, or any auto-fix — unless the human explicitly asked to commit in this conversation. Subcommand files reference this policy without restating it. The wiki's own `AGENTS.md` carries the same rule for downstream agents.
