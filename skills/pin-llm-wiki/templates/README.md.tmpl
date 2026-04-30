@@ -4,14 +4,16 @@ A personal knowledge base for **{{DOMAIN}}**, maintained with [pin-llm-wiki](htt
 
 ## What's in here
 
-Every source is fetched, summarized, and cross-referenced so you (and any AI agent) can query it without re-reading the originals.
+Every source is fetched, summarized, and cross-referenced so you and any AI agent can query it without re-reading the originals.
 
 ```
-wiki/index.md       ← start here — full source list
+wiki/index.md       ← start here; full source list
 wiki/overview.md    ← rolling cross-source overview
 wiki/sources/       ← one page per ingested source
-raw/                ← immutable source captures (do not edit)
-inbox.md            ← drop new URLs here
+raw/                ← immutable source captures; do not edit
+inbox.md            ← drop new URLs under ## Pending
+AGENTS.md           ← canonical instructions for agents in this wiki
+.pin-llm-wiki.yml   ← config: domain, detail level, source types, lint cadence
 ```
 
 ## Adding sources
@@ -38,7 +40,7 @@ inbox.md            ← drop new URLs here
 
 ## Inline inbox tags
 
-Append these (as HTML comments) to any URL line in `inbox.md`:
+Append these HTML comments to any URL line in `inbox.md`:
 
 | Tag | Effect |
 |---|---|
@@ -52,9 +54,11 @@ Append these (as HTML comments) to any URL line in `inbox.md`:
 
 ## Querying the wiki
 
-Open `wiki/index.md` for a full table of sources. Follow `[[wikilinks]]` to source pages.
+Open `wiki/index.md` for the full source table, then follow `[[wikilinks]]` into source pages. Use `wiki/overview.md` for a cross-source synthesis.
 
-AI agents in this repo are instructed to consult the wiki before answering — see `AGENTS.md`.
+AI agents in this repo are instructed to consult this wiki before answering questions about **{{DOMAIN}}**. See `AGENTS.md` for the exact protocol.
+
+Raw files under `raw/` are the citation backstop. Prefer the wiki pages for normal reading; use raw captures when you need to verify source text directly.
 
 ## Maintenance
 
@@ -63,7 +67,11 @@ AI agents in this repo are instructed to consult the wiki before answering — s
 /pin-llm-wiki remove <slug> # soft-delete a source to wiki/.archive/
 ```
 
-To refresh a source: add `<!-- refresh -->` to its `## Completed` line in `inbox.md`, then run `/pin-llm-wiki run`.
+To refresh a source, add `<!-- refresh -->` to its line under `## Completed` in `inbox.md`, then run:
+
+```
+/pin-llm-wiki run
+```
 
 ## Git
 

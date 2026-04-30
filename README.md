@@ -1,145 +1,68 @@
 # pin-llm-wiki
 
-A multi-editor skill that automates the [Karpathy LLM Wiki pattern](https://x.com/karpathy/status/1805977730336702875): drop a URL, get a citable, cross-referenced wiki page.
+A multi-editor skill that automates the [Karpathy LLM Wiki pattern](https://x.com/karpathy/status/1805977730336702875): drop in URLs, get a local, citable, cross-referenced wiki that agents can read before answering.
 
 **Where it runs:** [Claude Code](https://claude.com/product/claude-code) (slash commands), [GitHub Copilot](https://github.com/features/copilot) and [Cursor](https://cursor.com) (install the skill + follow the same workflows; see below).
 
+## Why use it
+
+`pin-llm-wiki` turns external sources into a durable knowledge base:
+
+- `raw/` keeps immutable captures of the original sources.
+- `wiki/` holds summarized, wikilinked pages with citations back to raw files.
+- `AGENTS.md` tells AI agents to consult the wiki before answering domain questions.
+- `inbox.md` gives humans and agents a simple queue for future sources.
+
+The result is a repo-local memory layer: reviewable in git, queryable by agents, and less dependent on whatever context happens to fit in one chat.
+
 ## Install
 
-### Symlinks (this repo)
-
-Canonical skill files live under **[`skills/pin-llm-wiki/`](skills/pin-llm-wiki/)**.
-
-```bash
-./install.sh           # symlinks to ~/.claude/skills/, ~/.copilot/skills/, ~/.cursor/skills/
-./install.sh project   # symlinks to .claude/skills/, .copilot/skills/, .cursor/skills/ in cwd
-./install.sh /path/to  # one explicit parent dir (creates /path/to/pin-llm-wiki → skills/pin-llm-wiki)
-```
-
-### Via [skills.sh](https://skills.sh) / Skills CLI ([vercel-labs/skills](https://github.com/vercel-labs/skills))
-
-Install the **`skills`** npm package. On some npm versions, **`npx skills …` is parsed incorrectly**; use either form below.
-
-**Reliable (recommended):**
-
-```bash
-npm exec --yes --package=skills -- skills add ndjordjevic/pin-llm-wiki
-```
-
-Pin a single skill if the repo grows:
-
-```bash
-npm exec --yes --package=skills -- skills add ndjordjevic/pin-llm-wiki --skill pin-llm-wiki
-```
-
-**Alternate (when your `npx` supports it):**
+From the directory where you want the skill (e.g. your wiki repo), run:
 
 ```bash
 npx skills@latest add ndjordjevic/pin-llm-wiki
 ```
 
-Use **`-g`** for a user-global install, **`-a <agent>`** to target agents (e.g. `claude-code`, `cursor`). Optional explicit path:
+More options (agents, global scope, listing): [skills.sh](https://skills.sh) and `npx skills@latest --help`.
+
+## Quickstart
+
+Inside the repo that should become a wiki:
 
 ```bash
-npm exec --yes --package=skills -- skills add https://github.com/ndjordjevic/pin-llm-wiki/tree/main/skills/pin-llm-wiki
-```
-
-## Usage
-
-- **Claude Code:** use `/pin-llm-wiki` subcommands in the agent (`init`, `add`, `run [<url>]`, `lint`, `remove`, `queue`) — same as the skill’s `SKILL.md` dispatch table.
-- **Cursor / GitHub Copilot:** with this repo installed as a [Cursor skill](https://cursor.com/docs/context/skills) (see `~/.cursor/skills/` or `.cursor/skills/` from `./install.sh`) or a Copilot skill, the agent loads the same `SKILL.md`. In Cursor you can also type `/pin-llm-wiki` in Agent chat per Cursor’s skills UI. Alternatively, follow the step-by-step instructions in the generated `AGENTS.md` in your wiki. All major tools (Cursor, GitHub Copilot, Copilot CLI, Claude Code) load `AGENTS.md` automatically — no extra adapter files needed.
-- **Git:** generated wikis instruct **all** agents not to run `git commit` / `git push` after ingests, lint, or other workflow steps unless you explicitly ask in chat—the human reviews diffs and commits.
-
-### Start a new wiki
-
-```
 /pin-llm-wiki init
-```
-
-Runs a short interview (domain, detail level, source types, git settings), then scaffolds `inbox.md`, `wiki/`, `raw/`, `AGENTS.md`, and `.pin-llm-wiki.yml` in the current directory.
-
-### Ingest a single source
-
-```
 /pin-llm-wiki run https://github.com/org/repo
-/pin-llm-wiki run https://example.com
-```
-
-Fetches, ingests, and writes `wiki/sources/<slug>.md`. If the URL isn't already in `inbox.md`, it is auto-queued first. Updates index, overview, log, and inbox in one shot.
-
-For **web sources**, the skill automatically discovers the product's GitHub repo from the page content and fetches it as a companion. The result is a single unified source page (`wiki/sources/<slug>.md`) that covers the product website and the GitHub repo together — one inbox entry, one source page. Use `<!-- no-companion -->` to suppress this or `<!-- companion:github.com/<org>/<repo> -->` to override the discovered repo.
-
-**Deep multi-product mode.** When a web source is ingested at `<!-- detail:deep -->` (or `deep` is the wiki default) and the discovery step finds a multi-product platform — ≥2 products, each with its own docs subsection or its own GitHub repo — the skill writes one **umbrella** page plus one **sub-page per product**. All pages cite the same single raw file. Example: `https://www.langchain.com/` becomes `wiki/sources/langchain.com.md` (umbrella) plus `wiki/sources/langchain.com-langchain.md`, `wiki/sources/langchain.com-langgraph.md`, `wiki/sources/langchain.com-langsmith.md`, `wiki/sources/langchain.com-deepagents.md`. The umbrella is a hub page (summary + `## Products` wikilinks); each sub-page covers its product in depth. Companion-github discovery is skipped in multi-product mode — promote a specific product to its own unified page later via a separate `run <url>` with `<!-- companion:... -->` if you want full repo coverage.
-
-**GitHub non-root pages are treated differently.** A URL like `https://github.com/org/repo/tree/main/path` is treated as a **single-page web source**, not a repo ingest. The skill captures only that exact page, skips docs discovery and companion-repo discovery, and writes a page-scoped web raw file such as `raw/web/org-repo-tree-main-path.md`.
-
-### Process pending inbox items
-
-Edit `inbox.md` → add URLs under `## Pending` → then:
-
-```
-/pin-llm-wiki run              # process all pending items
-/pin-llm-wiki run <url>        # process only this one URL (auto-queues if missing)
-```
-
-Ingests each pending URL in order, moves completed lines to `## Completed`. The single-URL form is useful for ingesting one specific source without touching the rest of the queue.
-
-### Inline inbox tags
-
-Append these (as HTML comments) to any URL line:
-
-| Tag | Effect |
-|---|---|
-| `detail:brief` / `detail:standard` / `detail:deep` | Override detail level for this source |
-| `branch:dev` | GitHub: use this branch instead of default |
-| `clone` | GitHub deep: full `git clone` to `raw/github/<org>-<repo>/` |
-| `skip` | Skip this URL on the next run |
-| `companion:github.com/<org>/<repo>` | Web: skip GitHub discovery, use this repo as the companion |
-| `no-companion` | Web: suppress companion GitHub fetch even if a repo is found |
-| `note: text` | Freeform note for human review (queue only; ignored by ingest) |
-
-Example:
-```
-- [ ] https://github.com/org/repo <!-- detail:deep --><!-- branch:dev -->
-```
-
-### Lint
-
-```
+/pin-llm-wiki queue https://example.com
+/pin-llm-wiki run
 /pin-llm-wiki lint
 ```
 
-Runs 11 health checks (citation coverage, orphans, stale sources, frontmatter shape, split-product sources, etc.). Auto-fixes missing index links and re-syncs Cursor/Copilot adapter files.
+After `init`, follow the generated wiki's `AGENTS.md`; it is the operating manual for agents working in that knowledge base.
 
-### Queue a source (agent-friendly)
+## Commands
 
-```
-/pin-llm-wiki queue https://github.com/org/repo
-```
+Use **`/pin-llm-wiki`** in the agent. Claude Code, Cursor, and GitHub Copilot all use the same `SKILL.md`.
 
-Adds the URL to `inbox.md`'s `## Pending` section without fetching or ingesting. Useful for agents that discover interesting sources mid-task and want to surface them for human review. Multiple URLs accepted space-separated. Supports the same inline tags as `add` plus `<!-- note: text -->` for freeform rationale.
+| Subcommand | What it does |
+|---|---|
+| **`init`** | Scaffold `inbox.md`, `.pin-llm-wiki.yml`, `AGENTS.md`, `wiki/`, and `raw/` |
+| **`run [url]`** | Ingest one URL, or omit `url` to process every pending item in `inbox.md` |
+| **`queue <url> ...`** | Add URLs to `inbox.md` without fetching or ingesting |
+| **`lint`** | Validate wiki health and apply light non-destructive fixes |
+| **`remove <slug>`** | Soft-delete a source into `wiki/.archive/` |
 
-### Remove a source
+Ingest rules, inbox HTML tags, companion repos, and multi-product deep mode live in `skills/pin-llm-wiki/SKILL.md` and its sibling workflow files.
 
-```
-/pin-llm-wiki remove <slug>
-```
-
-Soft-deletes to `wiki/.archive/`. Reports dangling references so you can fix them, then run lint for full wiki validation.
-
-### Refresh a source
-
-Add `<!-- refresh -->` to its line in `## Completed`, then run `/pin-llm-wiki run`.
-
-## Wiki structure
+## What gets created
 
 ```
-inbox.md              drop URLs here
-.pin-llm-wiki.yml     config
+inbox.md              source queue; drop URLs under ## Pending
+.pin-llm-wiki.yml     config: domain, detail level, source types, lint cadence
+AGENTS.md             canonical instructions for agents in the generated wiki
 wiki/
-  index.md            start here
-  overview.md         rolling synthesis
-  log.md              append-only history
+  index.md            start here; full source list
+  overview.md         rolling cross-source synthesis
+  log.md              append-only ingest, refresh, and removal history
   sources/            one page per ingested source
   .archive/           soft-deleted sources
 raw/
@@ -150,48 +73,27 @@ raw/
 
 ## Source types
 
-| Type | Fetch tool | Raw output |
+| Type | Raw output | Notes |
 |---|---|---|
-| GitHub | `gh` CLI | `raw/github/<org>-<repo>.md` |
-| YouTube | `yt-dlp` | `raw/youtube/<video-id>-<slug>.md` |
-| Web | `WebFetch` | `raw/web/<slug>.md` |
+| GitHub | `raw/github/<org>-<repo>.md` | Root repo URLs can include branch overrides and optional deep clones |
+| YouTube | `raw/youtube/<video-id>-<slug>.md` | Transcript and metadata capture |
+| Web | `raw/web/<slug>.md` | Web pages/sites, including GitHub non-root URLs |
 
-## Publishing to [theskills.directory](https://theskills.directory)
+GitHub non-root pages such as `https://github.com/org/repo/tree/main/docs` are treated as single-page web sources. Web sources can discover companion GitHub repos unless suppressed with `<!-- no-companion -->`.
 
-1. Verify locally from this repo root:
+With `<!-- detail:deep -->`, multi-product docs sites can produce one umbrella page plus one sub-page per product, all citing the same raw capture.
 
-   ```bash
-   npm exec --yes --package=skills -- skills add . --list
-   ```
+## Agent behavior
 
-   Expect **pin-llm-wiki** in the output.
+Generated wikis include `AGENTS.md`, which tells AI agents to:
 
-   Alternate (when your `npx` handles the `skills` binary correctly):
+- Read `wiki/index.md` before answering domain questions.
+- Follow `[[wikilinks]]` into relevant source pages.
+- Cite wiki page names in answers.
+- Say when the wiki does not contain an answer, then fetch current information online.
 
-   ```bash
-   npx skills@latest add . --list
-   ```
+Agents are also instructed not to run `git commit` or `git push` unless the human explicitly asks.
 
-2. After you push `main`, optionally confirm against GitHub:
+## Limits
 
-   ```bash
-   npm exec --yes --package=skills -- skills add https://github.com/ndjordjevic/pin-llm-wiki --list
-   ```
-
-   (Until you push, the clone may still show an older `description`; re-run after publish.)
-
-   Alternate:
-
-   ```bash
-   npx skills@latest add ndjordjevic/pin-llm-wiki --list
-   ```
-
-3. Submit for listing: **[theskills.directory/submit](https://theskills.directory/submit)** (GitHub sign-in; preferred over duplicating the skill in a fork of [theskillsdirectory/skills](https://github.com/theskillsdirectory/skills)).
-
-**Optional (GitHub repo settings):**
-
-- **Description** (Settings → General): paste:
-
-  > A skill that automates the Karpathy-style LLM Wiki: ingest URLs (web/GitHub/YouTube) into a cited, cross-referenced knowledge base with linting. Works with Claude, Cursor, and Copilot via https://skills.sh
-
-- **Topics:** e.g. `agent-skill`, `claude-skill`, `cursor-skill`, `llm-wiki`, `knowledge-management`, `research`, `documentation`.
+This is a reviewable knowledge workflow, not an unattended publishing system. Generated pages should be inspected in git diffs. Large fetches have token guards, and Phase 1 lint defers contradiction and terminology-collision checks.
