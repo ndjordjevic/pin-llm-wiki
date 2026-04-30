@@ -17,9 +17,10 @@ The result is a repo-local memory layer: reviewable in git, queryable by agents,
 
 ## Install
 
-From the directory where you want the skill (e.g. your wiki repo), run:
+Create a folder for your wiki (or `cd` into an existing repo), then install the skill:
 
 ```bash
+mkdir my-wiki && cd my-wiki
 npx skills@latest add ndjordjevic/pin-llm-wiki
 ```
 
