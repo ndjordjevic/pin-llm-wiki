@@ -1,6 +1,6 @@
 ### Common protocol — URL parsing, slug derivation, inbox tags, companion fetch
 
-Shared subroutines used by `add.md`, `run.md`, and `queue.md`. Read the relevant section instead of inlining.
+Shared subroutines used by `run.md` and `queue.md`. Read the relevant section instead of inlining.
 
 ---
 

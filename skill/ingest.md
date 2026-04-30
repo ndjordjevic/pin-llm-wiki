@@ -392,7 +392,7 @@ In multi-product mode there is still **one** raw web file (the umbrella's), so s
 
 Write the updated file.
 
-**When `companion_slug` is non-null:** also update `raw/github/README.md`. The companion row was already written during the companion fetch step in `add.md`/`run.md` — verify it exists and update the date in-place. Do not append a duplicate row.
+**When `companion_slug` is non-null:** also update `raw/github/README.md`. The companion row was already written during the companion fetch step in `run.md` — verify it exists and update the date in-place. Do not append a duplicate row.
 
 ---
 

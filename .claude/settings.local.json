@@ -28,9 +28,7 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:www.langchain.com)",
       "Bash(rtk diff *)",
-      "Bash(sort -k1 -rn)",
-      "Bash(add)",
-      "Bash(add\" /Users/nenaddjordjevic/LLMProjects/pin-llm-wiki/skill/ /Users/nenaddjordjevic/LLMProjects/pin-llm-wiki/README.md 2>/dev/null | grep -v \"\\\\.archive\" | head -40)"
+      "Bash(sort -k1 -rn)"
     ]
   }
 }

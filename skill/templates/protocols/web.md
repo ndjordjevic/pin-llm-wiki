@@ -92,7 +92,7 @@ Steps:
 
    **Tie-break:** when multiple repo URLs appear, prefer the one whose `<org>` is most similar to the domain root (e.g. `paperclip.ing` → prefer `paperclipai/*`). If still tied, take the first in priority order.
 
-   Return the result as `companion_github_url` (a full URL string or `null`). **Do not fetch the repo here** — the caller (`add.md` / `run.md`) decides whether to fetch, applying any inbox-line tag overrides (`<!-- companion:... -->`, `<!-- no-companion -->`) before doing so.
+   Return the result as `companion_github_url` (a full URL string or `null`). **Do not fetch the repo here** — the caller (`run.md`) decides whether to fetch, applying any inbox-line tag overrides (`<!-- companion:... -->`, `<!-- no-companion -->`) before doing so.
 8. **Compile and write the raw file.** Always one file per ingest at `raw/web/<slug>.md` — no per-page directories. The file format is described below; deep multi-product mode adds `## Product: <name>` sections.
 
    **Mandatory post-write integrity check (deep mode only).** After writing the raw file, re-read it and verify:
@@ -104,7 +104,7 @@ Steps:
 9. **Follow redirects; log the final URL** to the raw file — not the original inbox URL. Stale domains silently redirect.
 10. Respect `robots.txt`. Set a descriptive user agent. Rate-limit between requests.
 
-**Returned to caller:** `companion_github_url`, `products` (list, possibly empty), `final_url`, `pages_count`. The caller (`add.md` / `run.md` / refresh) reads `products` and `companion_github_url` to decide which ingest branch to use.
+**Returned to caller:** `companion_github_url`, `products` (list, possibly empty), `final_url`, `pages_count`. The caller (`run.md` / refresh) reads `products` and `companion_github_url` to decide which ingest branch to use.
 
 **Guard:** if the cumulative crawl would exceed 200k input tokens, halt and surface to user before proceeding. In deep multi-product mode this is especially important — 4 products × 10 docs pages each will brush the limit; if the budget is tight, prefer fewer pages per product over fewer products.
 
