@@ -81,17 +81,19 @@ raw/
   web/                immutable web page captures
 ```
 
+The wiki is Markdown with `[[wikilinks]]`; opening the repo as an [Obsidian](https://obsidian.md) vault is a comfortable way to read and navigate it (start from `wiki/index.md`).
+
 ## Source types
 
-| Type | Raw output | Notes |
+Fetches are detail-aware: broader at `standard` / `deep` than at `brief`. Ingest then turns each raw capture into cited wiki pages (`ingest.md`).
+
+| Type | Raw output | Smarts |
 |---|---|---|
-| GitHub | `raw/github/<org>-<repo>.md` | Root repo URLs can include branch overrides and optional deep clones |
-| YouTube | `raw/youtube/<video-id>-<slug>.md` | Transcript and metadata capture |
-| Web | `raw/web/<slug>.md` | Web pages/sites, including GitHub non-root URLs |
+| GitHub | `raw/github/<org>-<repo>.md` | `gh`: metadata, README, repo layout, and more `docs/` at higher detail; `<!-- branch -->` / optional `<!-- clone -->` (deep). |
+| YouTube | `raw/youtube/<video-id>-<slug>.md` | `yt-dlp`: description, chapters, cleaned transcript (or a no-transcript flag). |
+| Web | `raw/web/<slug>.md` | Crawls landing + docs (plus `llms.txt` / sitemap where useful); often pulls a **companion** GitHub repo into one **unified** page unless `<!-- no-companion -->`. **`deep`** can **split multi-product sites**: one umbrella + one sub-page per product, still backed by **one** raw file—similar to how `langchain.com` becomes a hub plus pages like LangGraph / LangSmith. |
 
-GitHub non-root pages such as `https://github.com/org/repo/tree/main/docs` are treated as single-page web sources. Web sources can discover companion GitHub repos unless suppressed with `<!-- no-companion -->`.
-
-With `<!-- detail:deep -->`, multi-product docs sites can produce one umbrella page plus one sub-page per product, all citing the same raw capture.
+GitHub URLs with a path after the repo (`/tree/…`, `/blob/…`, …) are **single-page web** only: no full-repo ingest, companion discovery, or deep product split on that URL.
 
 ## Agent behavior
 
