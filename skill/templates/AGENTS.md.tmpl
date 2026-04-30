@@ -239,13 +239,12 @@ Run `/pin-llm-wiki lint` to check wiki health.
 | 7 | Frontmatter shape — source pages must NOT have `sources:` | ERROR |
 | 8 | Citation path format — must be relative-from-file, not root-relative | ERROR |
 | 9 | Inbox consistency — inbox line marked [x] but still under ## Pending | WARN |
-| 10 | Adapter sync — `.cursor/rules/wiki-instructions.mdc` body and `.github/copilot-instructions.md` must match `AGENTS.md` | WARN (auto-fixed) |
+| 10 | Adapter sync — `AGENTS.md` is the single canonical source; all tools load it automatically | (no-op) |
 | 11 | Split-product sources — web and github source pages share `product:` but lack `companion_urls` (skipped for multi-product subs, which downgrade to INFO) | WARN |
 | 12 | Parent-child consistency — every umbrella's `subpages:` entry has a matching sub with the right `parent_slug:`, and vice versa | ERROR |
 
 Auto-fixes applied on every lint run:
 - Missing `overview.md` / `log.md` links in `wiki/index.md`.
-- Re-sync `.cursor/rules/wiki-instructions.mdc` and `.github/copilot-instructions.md` from `AGENTS.md` when Check #10 detects drift (preserves the Cursor file's YAML frontmatter).
 
 Checks #2 (contradictions) and #6 (terminology collisions) are deferred in Phase 1 — reported as informational notes only.
 

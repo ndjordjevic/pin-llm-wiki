@@ -239,14 +239,13 @@ stale_threshold_days: 30    # configurable per §4.5 lint check
 | 6 | Terminology collisions — same term used for different concepts across sources (e.g. "skills" in Superpowers vs DeepAgents) | WARN |
 | 7 | Frontmatter shape — source pages must NOT include `sources:`; synthesis pages may | ERROR |
 | 8 | Citation path format — wiki-to-raw links must be relative-from-file (`../../raw/...` from `wiki/sources/`) | ERROR |
-| 10 | Adapter sync — `.cursor/rules/wiki-instructions.mdc` body and `.github/copilot-instructions.md` must match `AGENTS.md` | WARN (auto-fixed) |
+| 10 | Adapter sync — `AGENTS.md` is the single canonical source; all tools load it automatically | (no-op) |
 
 † **Check #1 severity:** **WARN** on `wiki/overview.md` only; **ERROR** on `wiki/sources/*`, `wiki/syntheses/*`, and other wiki pages.
 
 **Output:** structured report (counts by severity, list of findings with file:line references). **Auto-fix on every lint** (no `--fix` flag; Phase 1 is always this behavior):
 
 - **Auto-fix:** missing `overview.md` / `log.md` links in `index.md` scaffold.
-- **Auto-fix:** re-sync `.cursor/rules/wiki-instructions.mdc` and `.github/copilot-instructions.md` from `AGENTS.md` when drift is detected (Check #11). Preserves the Cursor file's existing YAML frontmatter.
 
 All other checks are report-only.
 
@@ -321,7 +320,7 @@ Human adds the tag to a previously-ingested line under `## Completed` (typically
 
 - Skill at `~/.claude/skills/pin-llm-wiki/SKILL.md` (and mirrored to `~/.copilot/skills/` and `~/.cursor/skills/` via `install.sh`) plus supporting `.md` files per subcommand. Project install symlinks the same tree under `.claude/skills/`, `.copilot/skills/`, and `.cursor/skills/` in the working directory.
 - **Claude Code:** triggered by `/pin-llm-wiki <subcommand>` in the CLI agent session.
-- **Cursor / GitHub Copilot:** the same `SKILL.md` dispatch; Cursor also discovers skills per [Cursor skills docs](https://cursor.com/docs/context/skills). For repo-level behavior without a global skill, `init` already emits `.cursor/rules/wiki-instructions.mdc` and `.github/copilot-instructions.md` alongside `AGENTS.md` and `CLAUDE.md`.
+- **Cursor / GitHub Copilot:** the same `SKILL.md` dispatch; Cursor also discovers skills per [Cursor skills docs](https://cursor.com/docs/context/skills). For repo-level behavior without a global skill, `init` emits `AGENTS.md` and `CLAUDE.md` — all major tools (Cursor, GitHub Copilot, Copilot CLI, Claude Code) load `AGENTS.md` automatically.
 - Generated wiki repos are self-contained — their agent instruction files load the workflow into a fresh session in that repo.
 
 ### 5.2 Agent architecture

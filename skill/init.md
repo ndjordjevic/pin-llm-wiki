@@ -141,8 +141,6 @@ Always:
 - `raw/assets/`
 - `wiki/sources/`
 - `wiki/.archive/`
-- `.cursor/rules/`
-
 Conditionally:
 - If `github` in SOURCE_TYPES: `raw/github/`
 - If `youtube` in SOURCE_TYPES: `raw/youtube/`
@@ -237,19 +235,6 @@ Substitute `{{DOMAIN}}` → DOMAIN.
 Write to `CLAUDE.md`.
 (This file contains `@AGENTS.md` — Claude Code expands it at load time.)
 
-**7d. Write `.cursor/rules/wiki-instructions.mdc`** — Cursor adapter (always-on):
-
-Read `<skill-dir>/templates/cursor-rules.mdc.tmpl`.
-Substitute `{{DOMAIN}}` → DOMAIN.
-Concatenate: the substituted frontmatter content + AGENTS_BODY.
-Write result to `.cursor/rules/wiki-instructions.mdc`.
-
-**7e. Write `.github/copilot-instructions.md`** — GitHub Copilot adapter:
-
-Create the `.github/` directory if it does not exist.
-Write AGENTS_BODY to `.github/copilot-instructions.md`.
-(GitHub Copilot reads this file automatically for repository-level instructions.)
-
 ### Step 8 — Git init (if GIT_INIT is true)
 
 Run `git init` only. Do not run `git add` or `git commit` (see SKILL.md Git policy).
@@ -264,10 +249,8 @@ Wiki scaffolded in <current directory>.
   .pin-llm-wiki.yml                           config (domain, detail level, source types)
   README.md                                   human-facing usage guide for this wiki
   inbox.md                                    drop URLs here under ## Pending
-  AGENTS.md                                   agent instructions — canonical (all tools)
+  AGENTS.md                                   agent instructions — canonical (Claude Code, Cursor, GitHub Copilot, Copilot CLI)
   CLAUDE.md                                   agent instructions — Claude Code adapter
-  .cursor/rules/wiki-instructions.mdc         agent instructions — Cursor (always-on)
-  .github/copilot-instructions.md             agent instructions — GitHub Copilot (auto-loaded)
   raw/                                        immutable source captures (written by fetch)
   wiki/                                       knowledge base (written by ingest)
     index.md                                  start here
@@ -276,7 +259,6 @@ Wiki scaffolded in <current directory>.
 
 Next: /pin-llm-wiki run <url>
 
-Note: if you manually edit AGENTS.md, copy the updated body into
-.cursor/rules/wiki-instructions.mdc (preserve the frontmatter at the top) and
-.github/copilot-instructions.md.
+Note: AGENTS.md is the single source of truth — all major AI tools (Claude Code,
+Cursor, GitHub Copilot, Copilot CLI) load it automatically.
 ```

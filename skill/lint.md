@@ -99,23 +99,11 @@ In `inbox.md`, any `- [x] ...` line under `## Pending` → WARN: `inbox line is 
 
 ---
 
-## Step I — Check #10: Adapter sync (WARN) → Auto-fix 2
+## Step I — Check #10: Adapter sync (WARN)
 
-Three files share one canonical body:
+`AGENTS.md` is the single canonical source — Cursor, Claude Code (via `CLAUDE.md` → `@AGENTS.md`), GitHub Copilot, and Copilot CLI all load it automatically. No adapter files need syncing.
 
-| File | Role |
-|---|---|
-| `AGENTS.md` | canonical (Claude Code reads via `CLAUDE.md` → `@AGENTS.md`) |
-| `.cursor/rules/wiki-instructions.mdc` | Cursor frontmatter + AGENTS.md body |
-| `.github/copilot-instructions.md` | AGENTS.md body verbatim |
-
-If either adapter's body (after stripping the `.mdc`'s leading YAML block) doesn't byte-match `AGENTS.md` → WARN.
-
-**Auto-fix 2** rewrites the drifted adapter:
-- Copilot file ← `AGENTS.md` verbatim.
-- Cursor `.mdc` ← preserve existing top frontmatter; if absent, prepend the standard one (`description: Agent instructions for the <domain> wiki (always-on)`, `alwaysApply: true`); body ← `AGENTS.md`.
-
-Skip if an adapter file is missing entirely (do not create one).
+This check is now a no-op. Skip it.
 
 ---
 
