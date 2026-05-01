@@ -28,7 +28,18 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:www.langchain.com)",
       "Bash(rtk diff *)",
-      "Bash(sort -k1 -rn)"
+      "Bash(sort -k1 -rn)",
+      "Bash(rtk pip *)",
+      "Bash(uv venv *)",
+      "Bash(.gif-venv/bin/pip install *)",
+      "Bash(.gif-venv/bin/python -c \"import PIL; print\\('PIL', PIL.__version__\\)\")",
+      "Bash(.gif-venv/bin/python3 -m pip install --quiet Pillow)",
+      "Bash(.gif-venv/bin/python -m ensurepip --upgrade)",
+      "Bash(.gif-venv/bin/python -m pip install --quiet Pillow)",
+      "Bash(fc-list)",
+      "Bash(.gif-venv/bin/python -c \"from PIL import Image; im = Image.open\\('pin-llm-wiki-ai-cli-light.png'\\); print\\(im.size, im.mode\\)\")",
+      "Bash(.gif-venv/bin/python make_gif.py)",
+      "Bash(.gif-venv/bin/python -c \"from PIL import Image; im = Image.open\\('pin-llm-wiki-ai-cli-light.gif'\\); print\\('size', im.size, 'frames=', getattr\\(im, 'n_frames', 1\\)\\); print\\('duration ms ~', im.info.get\\('duration'\\)\\)\")"
     ]
   }
 }
