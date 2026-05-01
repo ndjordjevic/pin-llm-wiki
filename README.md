@@ -38,6 +38,8 @@ npx skills@latest update pin-llm-wiki
 
 ## Quickstart
 
+![pin-llm-wiki CLI workflow: install via npx skills, then init, queue, ingest, and lint across Claude Code, Copilot, and Cursor](pin-llm-wiki-ai-cli-light.png)
+
 Inside the repo that should become a wiki:
 
 ```bash
