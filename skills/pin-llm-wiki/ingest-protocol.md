@@ -15,6 +15,8 @@ Called by `add`, `ingest`, and `refresh`. Execute steps in order.
 | `companion_slug` | `<org>-<repo>` if a companion GitHub repo was fetched; `null` otherwise. **Always null in deep multi-product mode.** |
 | `companion_raw_file_path` | `raw/github/<org>-<repo>.md` if companion fetch succeeded; `null` otherwise |
 | `products` | list of `{name, slug, deep_link_url?, docs_url?, repo_url?}` returned by web fetch step 5; `[]` for single-product, `null` for non-web. Drives the multi-product branch in Step 2. |
+| `primary_pending_line` | inbox line text used for tags + completed row (see `ingest.md` Pass 1). |
+| `normalized_url_key` | identity key from `templates/protocols/common.md` § Pending URL identity — for Step 8 duplicate removal. |
 
 ---
 
@@ -396,16 +398,22 @@ Write the updated file.
 
 ---
 
-## Step 8 — Move inbox line
+## Step 8 — Move inbox line(s)
+
+**Context from the caller:** the **primary pending line** is the inbox line whose URL and tags were used for this ingest (`ingest.md` Pass 1). The **normalized URL key** is from `<skill-dir>/templates/protocols/common.md` § Pending URL identity.
 
 1. Read `inbox.md`.
-2. Locate the URL's line under `## Pending`.
-3. Append `<!-- ingested <today> -->` to the line.
-4. If `auto_mark_complete: true`: flip `[ ]` → `[x]`.
-5. Move the line (with the appended comment, updated checkbox) from `## Pending` to the bottom of `## Completed`.
-6. Write the updated `inbox.md`.
+2. Collect **every** `- [ ]` line under `## Pending` whose URL normalizes to **normalized URL key** (including any still present that contain `<!-- skip -->` or differ only by formatting). Call this `pending_matches`.
+3. From **primary pending line**, build the completed row: preserve URL and all tags from **primary**; set checkbox to `[x]` if `auto_mark_complete: true`, else `[ ]`; append `<!-- ingested <today> -->` (after any existing tags on **primary**).
+4. **Remove** every line in `pending_matches` from `## Pending`.
+5. Append the single completed line to the bottom of `## Completed`.
+6. Write `inbox.md`.
 
-In multi-product mode there is still **one** inbox line (the umbrella's URL); subs are wiki-only artifacts and do not get their own inbox lines.
+If `pending_matches` has more than one line, log `INFO: merged N duplicate pending line(s) for the same URL into one Completed entry.` (with `N` = that count).
+
+**Fetch failures** never reach Step 8 — `ingest.md` Pass 1 flags lines in **G** while leaving them in `## Pending`.
+
+In multi-product mode there is still **one** logical inbox URL (the umbrella's); subs are wiki-only artifacts and do not get their own inbox lines.
 
 ---
 

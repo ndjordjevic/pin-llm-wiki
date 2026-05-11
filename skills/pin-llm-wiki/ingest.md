@@ -46,66 +46,66 @@ Re-read `inbox.md` after the mutation. Then fall through to Pass 1.
 
 ## Pass 1 — Process pending items
 
-Read `inbox.md`. Collect all lines matching `- [ ] ...` under `## Pending`, in order top-to-bottom.
+Use `<skill-dir>/templates/protocols/common.md` § **Pending URL identity** for all “same URL” / deduplication decisions.
 
-**In `single` mode:** filter the collected lines to only the one whose URL matches the target. (Error cases above already fired before this point.)
+**Loop A —** repeat until an iteration completes **Loop B** without performing a successful ingest (fetch + protocol Steps 1–8):
 
-For each such line:
+1. Read `inbox.md`. Collect all lines matching `- [ ] ...` under `## Pending`, top-to-bottom → `pending_list`.
+2. If `pending_list` is empty, exit Pass 1.
+3. **In `single` mode:** keep only lines whose normalized URL matches the invocation URL. If none remain, exit Pass 1.
+4. Set `made_progress = false`.
+5. **Loop B —** walk `pending_list` top-to-bottom. For each `line`:
 
-### 1. Skip check
+   **5a. Skip check** — If `line` contains `<!-- skip -->`: append `{pass: 1, url, outcome: skipped}` to the ingest log; leave `line` unchanged; continue to the next `line` in `pending_list`.
 
-If the line contains `<!-- skip -->`: append `{pass: 1, url, outcome: skipped}` to the ingest log, leave the line as-is, continue to next.
+   **5b. Duplicate group** — Re-read `inbox.md`. Let **G** = every `- [ ]` line under `## Pending` that **does not** contain `<!-- skip -->` and whose URL normalizes the same as `line`. Order **G** in document order (file top-to-bottom). Let **primary** = first entry in **G**. If **G** is empty, continue.
 
-### 2. Parse the line
+   **5c. Coordinator line** — `primary` is always `G[0]` (first matching non-skip row in the file). If the current `line` is **not** the same row as `primary` (same unchecked inbox row — identify by position in the file, not only by character-for-character text equality, because duplicates may be copy-pasted verbatim), **continue** — only `primary` runs fetch+ingest for this URL in this snapshot.
 
-Read `<skill-dir>/templates/protocols/common.md` § Inbox-line tag parsing. Extract URL, all tags, derive `effective_detail_level`, `companion_override_url`, `suppress_companion`.
+   **5d. Merge notice** — If `|G| > 1`, log `INFO: duplicate pending lines merged for <url-from-primary>`.
 
-### 3. Source type and slug
+   **5e. Parse** — Read `<skill-dir>/templates/protocols/common.md` § Inbox-line tag parsing on **primary** only. Extract URL, tags, `effective_detail_level`, `companion_override_url`, `suppress_companion`.
 
-Read `<skill-dir>/templates/protocols/common.md` § Source-type detection and § Slug and raw-path derivation. Determine `type`, `slug`, `raw_file_path`.
+   **5f. Source type and slug** — Read common.md § Source-type detection and § Slug and raw-path derivation. Determine `type`, `slug`, `raw_file_path`.
 
-### 4. Fetch
+   **5g. Fetch** — Read the protocol file for `type` and follow it exactly:
+   - GitHub → `<skill-dir>/templates/protocols/github.md`
+   - YouTube → `<skill-dir>/templates/protocols/youtube.md`
+   - Web → `<skill-dir>/templates/protocols/web.md` (GitHub non-root single-page mode included)
 
-Read the protocol file for the detected type and follow it exactly:
-- GitHub → `<skill-dir>/templates/protocols/github.md`
-- YouTube → `<skill-dir>/templates/protocols/youtube.md`
-- Web → `<skill-dir>/templates/protocols/web.md` (also handles GitHub non-root single-page mode)
+   Apply `<!-- branch:X -->` and `<!-- clone -->` (GitHub only). Use `effective_detail_level`.
 
-Apply `<!-- branch:X -->` and `<!-- clone -->` (GitHub only). Use `effective_detail_level`.
+   **Fetch failure handling:**
 
-**Fetch failure handling:**
+   | Failure | Action |
+   |---|---|
+   | YouTube, no transcript | Flag **every** line in **G** with `<!-- fetch-failed:no-transcript -->`. Leave all in `## Pending`. Log `fetch-failed:no-transcript`. Continue Loop B. |
+   | 200k token guard | Cumulative input tokens approach 200k → halt the entire run, surface to user. |
+   | Other error | Log error. Leave every line in **G** in `## Pending`. Continue Loop B. |
 
-| Failure | Action |
-|---|---|
-| YouTube, no transcript | Flag line with `<!-- fetch-failed:no-transcript -->`. Leave in `## Pending`. Log `fetch-failed:no-transcript`. Continue. |
-| 200k token guard | Cumulative input tokens approach 200k → halt the entire run, surface to user. |
-| Other error | Log error. Leave line in `## Pending`. Continue. |
+   **5h. Companion fetch (web only)** — Read common.md § Companion-fetch sub-protocol.
 
-### 5. Companion fetch (web sources only)
+   **5i. Ingest** — Read `<skill-dir>/ingest-protocol.md`; execute **Steps 1–8** in order. Pass:
 
-Read `<skill-dir>/templates/protocols/common.md` § Companion-fetch sub-protocol. The sub-protocol's gating conditions and self-loop guard apply.
+   | Variable | Value |
+   |---|---|
+   | `slug` | derived (YouTube: finalized after fetch step 1) |
+   | `type` | `github` / `youtube` / `web` |
+   | `raw_file_path` | derived |
+   | `effective_detail_level` | from **primary** |
+   | `auto_mark_complete` | from config |
+   | `today` | current date |
+   | `companion_slug` | from companion fetch |
+   | `companion_raw_file_path` | from companion fetch |
+   | `products` | from web fetch step 5 |
+   | **Primary pending line** | **primary** (exact line text) |
+   | **Normalized URL key** | from common.md § Pending URL identity |
 
-### 6. Ingest
+   Append `{pass: 1, url, slug, outcome: ingested}` to the ingest log (URL from **primary**).
 
-Read `<skill-dir>/ingest.md` and follow its instructions. Pass this context:
+   Set `made_progress = true`. **Break** out of Loop B (Step 8 removes **all** pending rows with this normalized URL, including skip-tagged duplicates and any non-primary members of **G**).
 
-| Variable | Value |
-|---|---|
-| `slug` | derived above (YouTube: finalized after fetch step 1) |
-| `type` | `github` / `youtube` / `web` |
-| `raw_file_path` | derived above |
-| `effective_detail_level` | override or config default |
-| `auto_mark_complete` | from config |
-| `today` | current date |
-| `companion_slug` | from companion fetch (null if skipped/failed/multi-product) |
-| `companion_raw_file_path` | from companion fetch (null otherwise) |
-| `products` | list returned by web fetch step 5 (≥2 entries triggers multi-product ingest branch) |
-
-Append `{pass: 1, url, slug, outcome: ingested}` to ingest log.
-
-### 7. Re-read inbox before next item
-
-`inbox.md` was mutated by ingest step 8. Re-read it before processing the next pending item.
+6. If `made_progress` is still `false` after Loop B, exit Pass 1. Otherwise start **Loop A** again from step 1.
 
 ---
 
@@ -258,6 +258,7 @@ Suggested commit message for the human (do not commit yourself): `ingest: <slug>
 
 ## Notes
 
+- **Duplicate URLs in `## Pending`:** multiple unchecked lines for the same normalized URL (per `common.md` § Pending URL identity) yield **one** fetch+ingest and **one** `## Completed` row; the **primary** is the first non-`<!-- skip -->` line in file order (tags win from **primary** only).
 - **Idempotency:** items remain under `## Pending` until successfully ingested. A crashed ingest can be safely re-run.
 - **`<!-- skip -->` is persistent:** remove the tag manually to process the item.
 - **Partial raw on crash:** the partial raw file (if any) will be overwritten on re-fetch — no manual cleanup needed.

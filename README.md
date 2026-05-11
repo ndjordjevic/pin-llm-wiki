@@ -86,6 +86,10 @@ raw/
 
 The wiki is Markdown with `[[wikilinks]]`; opening the repo as an [Obsidian](https://obsidian.md) vault is a comfortable way to read and navigate it (start from `wiki/index.md`).
 
+## Demo wiki
+
+For a maintained wiki built with this skill, see [ndjordjevic/agentic-ai-wiki](https://github.com/ndjordjevic/agentic-ai-wiki).
+
 ## Source types
 
 Fetches are detail-aware: broader at `standard` / `deep` than at `brief`. Ingest then turns each raw capture into cited wiki pages (`ingest.md`).

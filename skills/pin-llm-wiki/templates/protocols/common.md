@@ -19,6 +19,25 @@ If the detected type is not in `source_types` from config, note the mismatch in 
 
 ---
 
+## Pending URL identity (duplicate detection)
+
+Use this normalization when deciding whether two pending inbox lines refer to the **same** source (for deduplicating work and consolidating `## Completed`).
+
+1. Extract the URL token from the inbox line (first URL-shaped token after `- [ ]` / `- [x]`).
+2. Trim ASCII whitespace around the URL string.
+3. Parse as a URL. If parsing fails, treat the raw trimmed string as the identity (no merging with other lines).
+4. **Scheme + host:** lowercase both.
+5. **Host-only exception — YouTube:** if the host is `youtu.be` or ends with `youtube.com` (e.g. `www.youtube.com`, `m.youtube.com`), reduce to a **canonical key**:
+   - `youtu.be/<video-id>` → key `youtube:<video-id>` (path segment only, ignore query).
+   - `youtube.com/...` → extract `v=` from query or `list=` if needed; for standard watch URLs use key `youtube:<v>`.
+   - Two lines that resolve to the same `youtube:<video-id>` are duplicates.
+6. **All other URLs:** identity key = string `url:` + normalized serialization: scheme + `://` + host + path with trailing `/` removed except when path is `/`, + sorted query string if present (standard `key=value` pairs; omit empty query). Strip `#fragment`.
+7. Two pending lines are **duplicates** iff their identity keys are equal.
+
+`queue` may still refuse a second append when it finds the same raw URL string already in Pending; humans can still paste duplicate lines manually — `ingest` uses this section to merge them.
+
+---
+
 ## Slug and raw-path derivation
 
 **GitHub:**
