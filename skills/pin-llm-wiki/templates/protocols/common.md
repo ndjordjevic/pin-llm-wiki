@@ -55,6 +55,20 @@ Use this normalization when deciding whether two pending inbox lines refer to th
 - Slug: the domain string
 - Raw path: `raw/web/<slug>.md` — always one file per ingest, regardless of detail level
 
+**Web — X/Twitter status post** (host is `x.com` or `twitter.com` and path matches `/<user>/status/<id>` with optional trailing segments like `/photo/1`):
+- Slug: `<host>-<user>-<title-slug>` (lowercase host preserved as `x.com` or `twitter.com`)
+- Title-slug derivation — **requires fetched post text; finalize after the fetch step, before writing the raw file** (mirrors YouTube):
+  1. Take the tweet body text (the quoted text after `<DisplayName> on X:`); strip surrounding quotes and the trailing ` / X` site suffix if present.
+  2. **First sentence only** — split on `.`, `?`, `!` (treating `.` inside known acronyms like `CLAUDE.md`, `e.g.`, `i.e.` as non-terminal: don't split when the period is preceded by a single uppercase letter or a recognized abbreviation and followed by a non-space). Keep just the first sentence.
+  3. **Strip apostrophes** (`'` and `'`) by deletion, not hyphenation: `Karpathy's` → `karpathys` (not `karpathy-s`).
+  4. Lowercase; replace any remaining run of non-alphanumeric characters with a single `-`; trim leading/trailing `-`.
+  5. **Drop stopwords** from this exact list (split on `-`, drop matches, rejoin): `a, an, the, of, from, to, in, on, for, by, with, and, or, but, as, at`.
+  6. Truncate at **50 chars** at the last `-` boundary (no mid-word cuts).
+  7. **Fallback** — if the post body is empty, image/video-only, or yields a title-slug shorter than 8 chars after step 6, use `status-<id>` instead.
+- Example: `https://x.com/mnilax/status/2053116311132155938` with body "Karpathy's 4 CLAUDE.md rules cut Claude mistakes from 41% to 11%. After 30 codebases, I added 8 more" → `x.com-mnilax-karpathys-4-claude-md-rules-cut-claude-mistakes`
+- Raw path: `raw/web/<slug>.md`
+- Treated as a **single-page web capture**: fetch only the exact status URL (via Jina reader fallback if direct fetch is blocked); skip llms.txt, docs discovery, and companion discovery regardless of detail level. A companion GitHub repo may still be fetched if a `github.com/<org>/<repo>` URL appears in the post body and `suppress_companion` is false.
+
 **GitHub non-root page** (URL is `github.com/<org>/<repo>/<...>`):
 - Slug: `<org>-<repo>-<path-slug>` where `<path-slug>` is the remaining path joined with hyphens, kebab-cased
 - Example: `https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking` → `modelcontextprotocol-servers-tree-main-src-sequentialthinking`
