@@ -17,24 +17,32 @@ The result is a repo-local memory layer: reviewable in git, queryable by agents,
 
 ## Install
 
-Create a folder for your wiki (or `cd` into an existing repo), then install the skill:
+Install with the [`skills` CLI](https://github.com/vercel-labs/skills) (`npx skills@latest`). Pick **project** (repo-local `./skills/`) or **global** (`-g`, user-wide agent dirs under `~/`).
 
 ```bash
-mkdir my-wiki && cd my-wiki
+# Project — wiki/repo root
+mkdir my-wiki && cd my-wiki   # or: cd existing-repo
 npx skills@latest add ndjordjevic/pin-llm-wiki
+
+# Global
+npx skills@latest add ndjordjevic/pin-llm-wiki -g
 ```
 
-More options (agents, global scope, listing): [skills.sh](https://skills.sh) and `npx skills@latest --help`.
+Target agents with **`-a`**, list without installing with **`--list`**, browse [skills.sh](https://skills.sh), full flags in `npx skills@latest add --help`.
 
 ## Update
 
-From the same directory where you installed the skill (for example your wiki repo):
+Refresh the skill files from GitHub. Scope should match how you installed:
 
 ```bash
-npx skills@latest update pin-llm-wiki
+# Project install: from that repo’s root, or force project scope
+npx skills@latest update pin-llm-wiki -p
+
+# Global install
+npx skills@latest update pin-llm-wiki -g
 ```
 
-`skills update` may recreate directories for agents you do not use; delete those folders manually if you want a minimal tree. See `npx skills@latest update --help` for `-g` / project scope.
+Use **`-y`** to skip interactive scope prompts (the CLI can auto-pick project vs global when only one applies). `skills update` may recreate agent directories you do not use; delete those folders if you want a minimal tree. See `npx skills@latest update --help`.
 
 ## Quickstart
 
