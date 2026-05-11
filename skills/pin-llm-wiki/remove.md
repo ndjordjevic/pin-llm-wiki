@@ -97,9 +97,7 @@ Do this **before** moving files, so a partial failure leaves the filesystem cons
    - Standalone / unified / sub: just `<slug>`.
    - Multi-product umbrella cascade: `<slug>` + every entry in `subpages:`.
 3. For each slug in the removal set:
-   a. Remove its `  - "[[<slug>]]"` line from the `sources:` frontmatter list.
-   b. Find the paragraph that primarily cites `[[<slug>]]` and delete it. If `[[<slug>]]` only appears within a paragraph that primarily cites a different surviving source, just remove the `[[<slug>]]` reference (and any sentence solely about it) — do not delete the whole paragraph.
-4. **Invariant check before writing:** post-edit body paragraph count must equal the new `len(sources)`. The overview body invariant is `len(sources) == paragraph_count` (one paragraph per entry in `sources:`, in the same order — see `ingest.md` Step 5). If the count does not match, do NOT write the file — report `"overview.md paragraph count mismatch after removing <removal-set>. Fix manually: paragraph count must equal len(sources)."` and stop.
+   a. Find the paragraph that primarily cites `[[<slug>]]` and delete it. If `[[<slug>]]` only appears within a paragraph that primarily cites a different surviving source, just remove the `[[<slug>]]` reference (and any sentence solely about it) — do not delete the whole paragraph.
 5. Update the `updated:` frontmatter field to `<today>`.
 6. Write the updated file.
 

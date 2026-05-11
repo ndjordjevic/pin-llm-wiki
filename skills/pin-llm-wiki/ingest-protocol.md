@@ -314,32 +314,29 @@ Row format (same for all): `| [[<slug>]] | <type> | <effective_detail_level> | <
 
 ## Step 5 — Update `wiki/overview.md`
 
-**Invariant:** the body of `wiki/overview.md` contains **exactly one paragraph per entry in `sources:`**, in the same order. Number of paragraphs must equal the length of the `sources:` list. Verify this before writing.
+**Invariant:** the body of `wiki/overview.md` contains **exactly one paragraph per ingested source**, in ingest order. Detect presence by scanning the body for `[[<slug>]]`.
 
-1. Read `wiki/overview.md`. Check the `sources:` frontmatter list and count the body paragraphs.
+1. Read `wiki/overview.md`.
 
 2. **Standalone / unified flow:** treat the single source page as the only new entry. Apply the rules below for that one slug.
 
-3. **Multi-product flow:** treat the **umbrella** AND **each sub-page** as separate new entries. Each gets its own `sources:` entry and its own dedicated paragraph. Add the umbrella first, then the subs in the order they appear in `products`.
+3. **Multi-product flow:** treat the **umbrella** AND **each sub-page** as separate new entries. Each gets its own dedicated paragraph. Add the umbrella first, then the subs in the order they appear in `products`.
 
 **Per-entry rules** (apply for each new slug, in order):
 
-- **If `"[[<slug>]]"` already appears in `sources:`** — this is a refresh:
-  - Update the `updated:` frontmatter field to `<today>`. Do not add another paragraph or duplicate the frontmatter entry.
+- **If `[[<slug>]]` already appears in the body** — this is a refresh:
+  - Update the `updated:` frontmatter field to `<today>`. Do not add another paragraph.
 
-- **If `sources:` is empty (`sources: []`) and this is the first entry overall:**
+- **If the body has no paragraphs yet (first-ever ingest):**
   - Replace the placeholder body with an opening overview paragraph describing what this source covers and what it contributes to understanding the domain. Cite `[[<slug>]]`.
-  - Update `sources:` frontmatter to: `sources:\n  - "[[<slug>]]"`
 
-- **If `sources:` already has entries but does not include this slug:**
+- **If the body has paragraphs but does not include `[[<slug>]]`:**
   - **Append a new dedicated paragraph for this source** at the end of the body. Do not merge into an existing paragraph. The paragraph should summarize the source on its own terms and what it adds to the domain. Cite `[[<slug>]]` at least once.
   - For multi-product, the umbrella's paragraph may wikilink each sub via `[[<slug>-<product>]]`; sub-page paragraphs should focus on what the product specifically adds, with a short link back to `[[<umbrella-slug>]]` for context.
   - **Do not reference unrelated source pages by default.** Only mention another `[[source page]]` when there is substantial conceptual overlap, a direct product relationship, or a specific conflict/comparison that genuinely helps the reader.
-  - Append `  - "[[<slug>]]"` to the `sources:` frontmatter list.
 
-4. **Sanity check before writing:** the post-write paragraph count must equal `len(sources)`. If it doesn't, fix it.
-5. Update the `updated:` frontmatter field to `<today>`.
-6. Write the updated file.
+4. Update the `updated:` frontmatter field to `<today>`.
+5. Write the updated file.
 
 ---
 

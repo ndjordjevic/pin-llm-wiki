@@ -42,7 +42,7 @@ For each `wiki/sources/*.md`:
 - `subpages:` with `companion_urls:` or `raw_files:` → ERROR: umbrella cannot also be unified.
 - `parent_slug:` with `companion_urls:` or `raw_files:` → ERROR: sub cannot also be unified.
 
-For `wiki/overview.md`: missing or null `sources:` → WARN.
+For `wiki/overview.md`: body is empty or missing → WARN.
 
 ---
 
