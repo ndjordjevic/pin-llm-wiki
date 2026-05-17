@@ -17,18 +17,19 @@ The result is a repo-local memory layer: reviewable in git, queryable by agents,
 
 ## Install
 
-Install with the [`skills` CLI](https://github.com/vercel-labs/skills) (`npx skills@latest`). Pick **project** (repo-local `./skills/`) or **global** (`-g`, user-wide agent dirs under `~/`).
+Use the [`skills` CLI](https://github.com/vercel-labs/skills): **`npx skills@latest add ndjordjevic/pin-llm-wiki`** (project) or **`-g`** (global, e.g. `~/.cursor/skills`). Project installs land in **`.agents/skills/`** (Cursor, Copilot, …) and **`.claude/skills/`** (Claude Code)—not in `./skills/` (that path is only this repo’s package layout).
+
+For **Claude Code + Cursor + Copilot** in one repo, create `.claude` first so the CLI can install one real copy under `.agents/skills/` and symlink Claude Code to it.
 
 ```bash
-# Project — wiki/repo root
-mkdir my-wiki && cd my-wiki   # or: cd existing-repo
-npx skills@latest add ndjordjevic/pin-llm-wiki
+mkdir -p .claude
+npx skills@latest add ndjordjevic/pin-llm-wiki \
+  --agent claude-code --agent cursor --agent github-copilot -y
 
-# Global
-npx skills@latest add ndjordjevic/pin-llm-wiki -g
+npx skills@latest add ndjordjevic/pin-llm-wiki -g   # global
 ```
 
-Target agents with **`-a`**, list without installing with **`--list`**, browse [skills.sh](https://skills.sh), full flags in `npx skills@latest add --help`.
+Use **`--agent …`** for a predictable layout in agent terminals. **`--list`**, [skills.sh](https://skills.sh), **`npx skills@latest add --help`**.
 
 ## Update
 
