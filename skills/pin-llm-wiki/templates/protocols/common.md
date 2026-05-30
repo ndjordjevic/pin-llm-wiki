@@ -69,6 +69,20 @@ Use this normalization when deciding whether two pending inbox lines refer to th
 - Raw path: `raw/web/<slug>.md`
 - Treated as a **single-page web capture**: fetch only the exact status URL (via Jina reader fallback if direct fetch is blocked); skip llms.txt, docs discovery, and companion discovery regardless of detail level. A companion GitHub repo may still be fetched if a `github.com/<org>/<repo>` URL appears in the post body and `suppress_companion` is false.
 
+**Web — Medium article** (host is `medium.com` with path `/@<author>/<slug>`, or host is `<author>.medium.com` with path `/<article-slug>`):
+- Slug: derived from the article path slug — **do not use the domain `medium.com`**
+- Title-slug derivation — may be finalized from the URL alone (no fetch needed):
+  1. Extract the article path slug: last non-empty path segment, e.g. `10-must-have-clis-for-your-ai-agents-in-2026-51ba0d0881df`.
+  2. **Strip the Medium post ID** — remove the trailing `-<hex-id>` suffix: a run of 8–14 lowercase hex characters (`[0-9a-f]{8,14}`) after the last hyphen. Example: `10-must-have-clis-for-your-ai-agents-in-2026-51ba0d0881df` → `10-must-have-clis-for-your-ai-agents-in-2026`.
+  3. Lowercase; replace any run of non-alphanumeric characters with a single `-`; trim leading/trailing `-`.
+  4. **Drop stopwords** (same list as X/Twitter): `a, an, the, of, from, to, in, on, for, by, with, and, or, but, as, at`.
+  5. Truncate at **50 chars** at the last `-` boundary (no mid-word cuts).
+  6. **Fallback** — if the result is shorter than 8 chars, use `medium-<hex-id>` instead.
+- Example: `https://medium.com/@unicodeveloper/10-must-have-clis-for-your-ai-agents-in-2026-51ba0d0881df` → slug: `10-must-have-clis-ai-agents-2026`
+- Raw path: `raw/web/<slug>.md`
+- Treated as a **single-page web capture**: skip llms.txt, docs discovery, and companion discovery regardless of detail level.
+- **Fetch note — Medium is Cloudflare-blocked on the `@user` path form.** Always fetch via Jina Reader using the subdomain URL: derive author name from the URL (strip `@` from `@<author>`), then fetch `r.jina.ai/https://<author>.medium.com/<article-slug>`. If the inbox URL is already in subdomain form (`<author>.medium.com/<slug>`), use it directly. Do **not** attempt `medium.com/@<author>/...` directly — it returns 403.
+
 **GitHub non-root page** (URL is `github.com/<org>/<repo>/<...>`):
 - Slug: `<org>-<repo>-<path-slug>` where `<path-slug>` is the remaining path joined with hyphens, kebab-cased
 - Example: `https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking` → `modelcontextprotocol-servers-tree-main-src-sequentialthinking`
