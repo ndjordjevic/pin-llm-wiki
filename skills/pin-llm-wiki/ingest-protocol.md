@@ -300,11 +300,23 @@ In multi-product flow, the umbrella and its subs are all source pages; they are 
 
 ---
 
+## Chronological ordering (Steps 4–5, 7–8)
+
+**Invariant:** `wiki/index.md` (Sources table), `wiki/overview.md` (body paragraphs), each `raw/<type>/README.md` (Files table), and `inbox.md` (`## Completed`) stay sorted **ascending by ingest/fetch date** (oldest first). This is the canonical **ingest order**.
+
+**On new ingest (not refresh):** insert each new row/paragraph/line immediately **before** the first existing entry whose date column or `<!-- ingested YYYY-MM-DD -->` tag is **after** `<today>`. If every existing entry is older than or equal to `<today>`, append after the last same-day block (preserve file order within `<today>`). Do not append at the end when an earlier date slot exists.
+
+**On refresh:** update dates in-place only; do not reorder unless you are fixing a known sort violation.
+
+**Multi-product:** umbrella row/paragraph first, then subs in `products` order — treat that block as one ingest dated `<today>` and insert the whole block per the rule above.
+
+---
+
 ## Step 4 — Update `wiki/index.md`
 
 1. Read `wiki/index.md`.
-2. **Standalone / unified:** for the single source page being written, update its row in the Sources table in-place if it exists, or add a new row and increment `_N sources ingested._`.
-3. **Multi-product:** add a row for the **umbrella** AND a row for **each sub-page** (or update each in-place if it already exists). Each row uses the same `<type>` (`web`) and `<effective_detail_level>` (`deep`) and today's date. Increment `_N sources ingested._` by the number of NEW rows added (umbrella + subs that did not previously exist). On refresh, the count is unchanged.
+2. **Standalone / unified:** for the single source page being written, update its row in the Sources table in-place if it exists, or add a new row per **Chronological ordering** and increment `_N sources ingested._`.
+3. **Multi-product:** add a row for the **umbrella** AND a row for **each sub-page** (or update each in-place if it already exists). Each row uses the same `<type>` (`web`) and `<effective_detail_level>` (`deep`) and today's date. Insert rows per **Chronological ordering** (umbrella then subs). Increment `_N sources ingested._` by the number of NEW rows added (umbrella + subs that did not previously exist). On refresh, the count is unchanged.
 
 Row format (same for all): `| [[<slug>]] | <type> | <effective_detail_level> | <today> | |`
 
@@ -314,7 +326,7 @@ Row format (same for all): `| [[<slug>]] | <type> | <effective_detail_level> | <
 
 ## Step 5 — Update `wiki/overview.md`
 
-**Invariant:** the body of `wiki/overview.md` contains **exactly one paragraph per ingested source**, in ingest order. Detect presence by scanning the body for `[[<slug>]]`.
+**Invariant:** the body of `wiki/overview.md` contains **exactly one paragraph per ingested source**, in **Chronological ordering** (same order as the Sources table in `wiki/index.md`). Detect presence by scanning the body for `[[<slug>]]`.
 
 1. Read `wiki/overview.md`.
 
@@ -331,7 +343,7 @@ Row format (same for all): `| [[<slug>]] | <type> | <effective_detail_level> | <
   - Replace the placeholder body with an opening overview paragraph describing what this source covers and what it contributes to understanding the domain. Cite `[[<slug>]]`.
 
 - **If the body has paragraphs but does not include `[[<slug>]]`:**
-  - **Append a new dedicated paragraph for this source** at the end of the body. Do not merge into an existing paragraph. The paragraph should summarize the source on its own terms and what it adds to the domain. Cite `[[<slug>]]` at least once.
+  - **Insert a new dedicated paragraph** at the position required by **Chronological ordering** (not necessarily at the end). Do not merge into an existing paragraph. The paragraph should summarize the source on its own terms and what it adds to the domain. Cite `[[<slug>]]` at least once.
   - For multi-product, the umbrella's paragraph may wikilink each sub via `[[<slug>-<product>]]`; sub-page paragraphs should focus on what the product specifically adds, with a short link back to `[[<umbrella-slug>]]` for context.
   - **Do not reference unrelated source pages by default.** Only mention another `[[source page]]` when there is substantial conceptual overlap, a direct product relationship, or a specific conflict/comparison that genuinely helps the reader.
 
@@ -382,7 +394,7 @@ Read `raw/<type>/README.md`.
 
 **If a row for this slug already exists** in the Files table: update its `last-fetched` date column in-place (do not append a new row).
 
-**If no row exists:** append one row to the Files table:
+**If no row exists:** insert one row into the Files table per **Chronological ordering** (by the date column: Fetched / upload-date):
 - **GitHub:** `| raw/github/<org>-<repo>.md | <org>/<repo> | <stars> | <default-branch> | <latest-release> | <today> | |`
 - **YouTube:** `| raw/youtube/<video-id>-<slug>.md | <title> | <channel> | <duration> | <upload-date> | <today> | |`
 - **Web:** `| raw/web/<slug>.md | <slug> | <pages-fetched> | <today> | |`
@@ -403,7 +415,7 @@ Write the updated file.
 2. Collect **every** `- [ ]` line under `## Pending` whose URL normalizes to **normalized URL key** (including any still present that contain `<!-- skip -->` or differ only by formatting). Call this `pending_matches`.
 3. From **primary pending line**, build the completed row: preserve URL and all tags from **primary**; set checkbox to `[x]` if `auto_mark_complete: true`, else `[ ]`; append `<!-- ingested <today> -->` (after any existing tags on **primary**).
 4. **Remove** every line in `pending_matches` from `## Pending`.
-5. Append the single completed line to the bottom of `## Completed`.
+5. Insert the single completed line into `## Completed` per **Chronological ordering** (by `<!-- ingested YYYY-MM-DD -->`, oldest first).
 6. Write `inbox.md`.
 
 If `pending_matches` has more than one line, log `INFO: merged N duplicate pending line(s) for the same URL into one Completed entry.` (with `N` = that count).
