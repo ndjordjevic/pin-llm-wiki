@@ -6,9 +6,9 @@ Called by `add`, `ingest`, and `refresh`. Execute steps in order.
 
 | Variable | Value |
 |---|---|
-| `slug` | source identifier (e.g. `langchain-ai-langchain`, `abc123-video-title`, `docs.langchain.com`, `modelcontextprotocol-servers-tree-main-src-sequentialthinking`). For multi-product mode, this is the **umbrella slug** (e.g. `langchain.com`). |
+| `slug` | source identifier (e.g. `langchain-ai-langchain`, `abc123-video-title`, `docs.langchain.com`, `sequentialthinking-mcp`). For multi-product mode, this is the **umbrella slug** (e.g. `langchain.com`). |
 | `type` | `github` / `youtube` / `web` |
-| `raw_file_path` | path to the completed raw file (e.g. `raw/github/langchain-ai-langchain.md`, `raw/web/modelcontextprotocol-servers-tree-main-src-sequentialthinking.md`) |
+| `raw_file_path` | path to the completed raw file (e.g. `raw/github/langchain-ai-langchain.md`, `raw/web/sequentialthinking-mcp.md`) |
 | `effective_detail_level` | resolved detail level (`brief` / `standard` / `deep`) |
 | `auto_mark_complete` | from `.pin-llm-wiki.yml` |
 | `today` | current date `YYYY-MM-DD` |
@@ -70,7 +70,7 @@ updated: <today>
 
 `source_url:` is the canonical URL of the source (e.g. `https://github.com/org/repo`, `https://example.com`, `https://youtube.com/watch?v=ID`). Always populated.
 
-`product:` is a short kebab-case identifier for the product or project this source describes (e.g. `cabinet`, `gsd`, `superpowers`, `claude-memory-compiler`). Derive from the repo/site name — strip the author prefix from GitHub slugs (e.g. `obra-superpowers` → `superpowers`, `coleam00-claude-memory-compiler` → `claude-memory-compiler`, `gsd-build-get-shit-done` → `gsd`). For web sources, use the domain (strip `.com`/`.io`/etc when readable). **GitHub non-root pages treated as web sources are the exception:** derive the product slug from the repo portion of the page slug/source URL (for example `modelcontextprotocol-servers-tree-main-src-sequentialthinking` → `servers`). **Medium articles are the other exception:** because their slug is already title-derived (not domain-based), use the source slug itself as the `product:` value (e.g. slug `10-must-have-clis-ai-agents-2026` → `product: 10-must-have-clis-ai-agents-2026`). Sources describing the same product (e.g. a marketing site + its own GitHub repo) share the same `product:` slug. Resolved in Step 2b below.
+`product:` is a short kebab-case identifier for the product or project this source describes (e.g. `cabinet`, `gsd`, `superpowers`, `claude-memory-compiler`). Derive from the repo/site name — strip the author prefix from GitHub slugs (e.g. `obra-superpowers` → `superpowers`, `coleam00-claude-memory-compiler` → `claude-memory-compiler`, `gsd-build-get-shit-done` → `gsd`). For web sources, use the domain (strip `.com`/`.io`/etc when readable). **GitHub non-root pages treated as web sources are the exception:** use the source slug itself as `product:` (same as Medium — the slug is already leaf-derived, e.g. `sequentialthinking-mcp` → `product: sequentialthinking-mcp`). **Medium articles are the other exception:** because their slug is already title-derived (not domain-based), use the source slug itself as the `product:` value (e.g. slug `10-must-have-clis-ai-agents-2026` → `product: 10-must-have-clis-ai-agents-2026`). Sources describing the same product (e.g. a marketing site + its own GitHub repo) share the same `product:` slug. Resolved in Step 2b below.
 
 `companion_urls:` and `raw_files:` are present **only** on unified web+github pages (when `companion_slug` is non-null). **Omit both fields entirely** on standalone web, github, and youtube source pages — do not write empty lists.
 
@@ -151,7 +151,7 @@ Runs only after Step 2a (the multi-product Step 2c assigns `product:` explicitly
 After writing the source page, scan existing source pages in `wiki/sources/` (excluding the page just written) and resolve a `product:` value:
 
 - **GitHub source:** read `homepageUrl` from the raw file's `## Metadata` block. Extract its hostname (strip `www.`, preserve subdomains). If any existing **web** source page has a slug equal to that hostname, set `product:` on both pages to that hostname. Otherwise derive the product slug from the repo slug: strip the author prefix (e.g. `obra-superpowers` → `superpowers`, `coleam00-claude-memory-compiler` → `claude-memory-compiler`, `gsd-build-get-shit-done` → `gsd`). Use the derived slug.
-- **Web source:** scan the raw file body for a `github.com/<org>/<repo>` URL appearing in the landing page's first ~500 chars or in the page title/hero. If `<org>-<repo>` matches an existing **github** source slug, set `product:` on both pages to the web source's slug (the domain or page slug). Otherwise derive the product slug from the domain (strip `.com`/`.io`/`.dev` suffix when the result is still recognizable, e.g. `runcabinet.com` → `cabinet`). **GitHub non-root web pages are the exception:** derive the product slug from the repo segment instead of `github.com` (for example `/modelcontextprotocol/servers/tree/main/src/sequentialthinking` → `servers`). Use the derived slug.
+- **Web source:** scan the raw file body for a `github.com/<org>/<repo>` URL appearing in the landing page's first ~500 chars or in the page title/hero. If `<org>-<repo>` matches an existing **github** source slug, set `product:` on both pages to the web source's slug (the domain or page slug). Otherwise derive the product slug from the domain (strip `.com`/`.io`/`.dev` suffix when the result is still recognizable, e.g. `runcabinet.com` → `cabinet`). **GitHub non-root web pages are the exception:** use the source slug as `product:` (for example slug `sequentialthinking-mcp` → `product: sequentialthinking-mcp`). Use the derived slug.
 - **YouTube sources:** derive from the video title or channel name (short, kebab-case). Never auto-grouped with other sources.
 - `product:` is always populated — never left as `null` after Step 2b.
 

@@ -84,8 +84,14 @@ Use this normalization when deciding whether two pending inbox lines refer to th
 - **Fetch note — Medium is Cloudflare-blocked on the `@user` path form.** Always fetch via Jina Reader using the subdomain URL: derive author name from the URL (strip `@` from `@<author>`), then fetch `r.jina.ai/https://<author>.medium.com/<article-slug>`. If the inbox URL is already in subdomain form (`<author>.medium.com/<slug>`), use it directly. Do **not** attempt `medium.com/@<author>/...` directly — it returns 403.
 
 **GitHub non-root page** (URL is `github.com/<org>/<repo>/<...>`):
-- Slug: `<org>-<repo>-<path-slug>` where `<path-slug>` is the remaining path joined with hyphens, kebab-cased
-- Example: `https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking` → `modelcontextprotocol-servers-tree-main-src-sequentialthinking`
+- Slug derivation — parse path after `github.com/<org>/<repo>/`:
+  1. Strip leading `tree/<ref>/`, `blob/<ref>/`, or `issues/<n>/` / `pull/<n>/` prefixes.
+  2. Let **leaf** = last non-empty path segment; if it has a file extension, use the stem only.
+  3. If **leaf** is generic (`src`, `lib`, `docs`, `test`, `tests`, `dist`, `build`, `main`, `master`, `readme`) use `<repo>-<leaf>` (kebab-cased) instead of leaf alone.
+  4. Otherwise slug = kebab-case(**leaf**).
+  5. **`-mcp` suffix:** append when the path (after repo) contains a segment `mcp`, OR `<repo>` is `servers` (MCP servers monorepo convention), unless slug already ends with `-mcp`.
+  6. **Collision guard:** if the slug already exists in `wiki/index.md`, prefix with `<repo>-` (e.g. `servers-sequentialthinking-mcp`).
+- Example: `https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking` → `sequentialthinking-mcp`
 - Raw path: `raw/web/<slug>.md`
 - Treated as a **single-page web capture**: fetch only the exact URL; skip llms.txt, docs discovery, and companion discovery regardless of detail level.
 
