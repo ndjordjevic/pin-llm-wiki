@@ -57,15 +57,17 @@ Use this normalization when deciding whether two pending inbox lines refer to th
 
 **Web — X/Twitter status post** (host is `x.com` or `twitter.com` and path matches `/<user>/status/<id>` with optional trailing segments like `/photo/1`):
 - Slug: `<host>-<user>-<title-slug>` (lowercase host preserved as `x.com` or `twitter.com`)
-- Title-slug derivation — **requires fetched post text; finalize after the fetch step, before writing the raw file** (mirrors YouTube):
-  1. Take the tweet body text (the quoted text after `<DisplayName> on X:`); strip surrounding quotes and the trailing ` / X` site suffix if present.
-  2. **First sentence only** — split on `.`, `?`, `!` (treating `.` inside known acronyms like `CLAUDE.md`, `e.g.`, `i.e.` as non-terminal: don't split when the period is preceded by a single uppercase letter or a recognized abbreviation and followed by a non-space). Keep just the first sentence.
-  3. **Strip apostrophes** (`'` and `'`) by deletion, not hyphenation: `Karpathy's` → `karpathys` (not `karpathy-s`).
-  4. Lowercase; replace any remaining run of non-alphanumeric characters with a single `-`; trim leading/trailing `-`.
-  5. **Drop stopwords** from this exact list (split on `-`, drop matches, rejoin): `a, an, the, of, from, to, in, on, for, by, with, and, or, but, as, at`.
-  6. Truncate at **50 chars** at the last `-` boundary (no mid-word cuts).
-  7. **Fallback** — if the post body is empty, image/video-only, or yields a title-slug shorter than 8 chars after step 6, use `status-<id>` instead.
-- Example: `https://x.com/mnilax/status/2053116311132155938` with body "Karpathy's 4 CLAUDE.md rules cut Claude mistakes from 41% to 11%. After 30 codebases, I added 8 more" → `x.com-mnilax-karpathys-4-claude-md-rules-cut-claude-mistakes`
+- Title-slug derivation — **requires fetched post; finalize after the fetch step, before writing the raw file** (mirrors YouTube):
+  1. **Post title first** — extract from the fetch `Title:` metadata line: `<DisplayName> on X: "<Post Title>" / X`. Use the quoted `<Post Title>` string; strip surrounding quotes and the trailing ` / X` suffix. This is the canonical name source — do **not** derive from the tweet body when a title is present.
+  2. **Body fallback** — if step 1 yields nothing (image/video-only post, missing `Title:` line), use the first sentence of the tweet body instead.
+  3. **Truncate long titles** — if the string from step 1 or 2 contains `.`, `?`, or `!` sentence boundaries (treating `.` inside known acronyms like `CLAUDE.md`, `e.g.`, `i.e.` as non-terminal: don't split when the period is preceded by a single uppercase letter or a recognized abbreviation and followed by a non-space), keep only the first sentence. Short titles without sentence-ending punctuation pass through whole.
+  4. **Strip apostrophes** (`'` and `'`) by deletion, not hyphenation: `Karpathy's` → `karpathys` (not `karpathy-s`).
+  5. Lowercase; replace any remaining run of non-alphanumeric characters with a single `-`; trim leading/trailing `-`.
+  6. **Do not drop stopwords** — post titles are author-chosen; preserve every word (unlike Medium path-slug derivation).
+  7. Truncate at **50 chars** at the last `-` boundary (no mid-word cuts).
+  8. **Fallback** — if the title is empty or yields a title-slug shorter than 8 chars after step 7, use `status-<id>` instead.
+- Example: `https://x.com/mnilax/status/2053116311132155938` with title "Karpathy's 4 CLAUDE.md rules cut Claude mistakes from 41% to 11%. After 30 codebases, I added 8 more" → first sentence → `x.com-mnilax-karpathys-4-claude-md-rules-cut-claude-mistakes`
+- Example: `https://x.com/ericzakariasson/status/2036762680401223946` with title "Building CLIs for agents" → `x.com-ericzakariasson-building-clis-for-agents`
 - Raw path: `raw/web/<slug>.md`
 - Treated as a **single-page web capture**: fetch only the exact status URL (via Jina reader fallback if direct fetch is blocked); skip llms.txt, docs discovery, and companion discovery regardless of detail level. A companion GitHub repo may still be fetched if a `github.com/<org>/<repo>` URL appears in the post body and `suppress_companion` is false.
 
