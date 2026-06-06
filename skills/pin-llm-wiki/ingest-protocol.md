@@ -302,9 +302,11 @@ In multi-product flow, the umbrella and its subs are all source pages; they are 
 
 ## Chronological ordering (Steps 4–5, 7–8)
 
-**Invariant:** `wiki/index.md` (Sources table), `wiki/overview.md` (body paragraphs), each `raw/<type>/README.md` (Files table), and `inbox.md` (`## Completed`) stay sorted **ascending by ingest/fetch date** (oldest first). This is the canonical **ingest order**.
+**Invariant:** `wiki/index.md` (Sources table) is the canonical **ingest order**. `wiki/overview.md` (body paragraphs), each `raw/<type>/README.md` (Files table), and `inbox.md` (`## Completed`) must match it: **ascending by ingest/fetch date** (oldest first), and **same relative order as the Sources table within each date** (including same-day tie-breaks).
 
-**On new ingest (not refresh):** insert each new row/paragraph/line immediately **before** the first existing entry whose date column or `<!-- ingested YYYY-MM-DD -->` tag is **after** `<today>`. If every existing entry is older than or equal to `<today>`, append after the last same-day block (preserve file order within `<today>`). Do not append at the end when an earlier date slot exists.
+**On new ingest (not refresh):** insert each new row/paragraph/line at the position it would occupy in `wiki/index.md` — immediately **before** the first existing entry whose date is **after** `<today>`, or within the `<today>` block in Sources-table order. Do not append at the end when an earlier date slot exists.
+
+**`inbox.md` `## Completed`:** one line per ingested URL. Sort by the **index position** of that URL's primary slug (umbrella slug for multi-product ingests), not alphabetically by URL. After any bulk reorder, Completed lines must still match Sources-table order for every URL that has an inbox line.
 
 **On refresh:** update dates in-place only; do not reorder unless you are fixing a known sort violation.
 
