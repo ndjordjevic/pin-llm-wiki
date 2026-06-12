@@ -211,6 +211,44 @@ In `single` mode, `auto_lint: per-ingest` **does** trigger lint after the single
 
 ---
 
+## Post-ingest order verification
+
+Run after every ingest (single or batch) that produced at least one successful ingest. Verifies that `wiki/overview.md` paragraph order and `inbox.md` Completed line order both match the Sources table order in `wiki/index.md`.
+
+### 1. Extract reference order from `wiki/index.md`
+
+Read `wiki/index.md`. From the Sources table, collect every `[[slug]]` in document order → `index_slugs` (ordered list, length = N sources ingested).
+
+### 2. Verify `wiki/overview.md`
+
+Read `wiki/overview.md`. Split the body (after frontmatter) into paragraphs on `\n\n`. For each paragraph, check whether it begins with `[[slug]]`; if so, record `slug` → `overview_slugs` (ordered list).
+
+**Invariant:** every slug in `index_slugs` must appear in `overview_slugs`, in the same relative order.
+
+- Collect `common` = slugs present in both lists, in their index order.
+- Collect `overview_order` = slugs present in both lists, in their overview order.
+- If `common != overview_order`: there are mismatches. For each out-of-place slug, move its paragraph in `overview.md` to the position that restores index order. Rewrite `wiki/overview.md`.
+- Report: `Order check: overview OK` or `Order check: overview fixed N paragraph(s)`.
+
+**Algorithm for reordering:** build the desired paragraph sequence by walking `index_slugs` — for each slug, if it has a paragraph in the current list place it at that position; non-slug paragraphs (blank lines, header blocks if any) stay in place. In practice: extract all slug-paragraphs into a dict keyed by slug, then emit them in `index_slugs` order, interleaved with any non-slug paragraphs at their original relative positions.
+
+### 3. Verify `inbox.md` Completed
+
+Read `inbox.md`. From the `## Completed` section, collect every `- [x]` or `- [ ]` line in document order → `completed_lines`. For each line, derive the primary slug (the slug of the wiki page the URL maps to — the same slug used for the corresponding row in `index_slugs`; for multi-product ingests, use the umbrella slug). Skip lines whose URL has no corresponding slug in `index_slugs` (pre-wiki entries or external URLs).
+
+**Invariant:** the relative order of completed lines must match the relative order of their slugs in `index_slugs`.
+
+- If out of order: reorder the Completed lines to match index order. Rewrite `inbox.md`.
+- Report: `Order check: inbox OK` or `Order check: inbox fixed N line(s)`.
+
+### 4. Scope
+
+- Run after Pass 1 and Pass 2 complete (before lint and summary).
+- In `single` mode: still run — a single new ingest can expose a pre-existing ordering violation.
+- On refresh with `no change`: skip (no new entries; order cannot have changed).
+
+---
+
 ## Summary report
 
 ### `batch` mode
