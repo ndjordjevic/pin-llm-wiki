@@ -147,7 +147,17 @@ Write the updated file.
 
 ---
 
-## Step 8 — Scan for dangling references
+## Step 8 — Remove inbox line
+
+Read `inbox.md`. In `## Completed`, find every line whose URL normalizes (per `common.md` § Pending URL identity) to the same key as the removed slug's `source_url`. Remove those lines entirely — the audit trail lives in `wiki/log.md`; the inbox completed section is a processing queue, not a history log. Write `inbox.md`.
+
+If no matching line is found, skip silently (the URL may never have been in inbox.md, e.g. manually ingested).
+
+Add `inbox.md` to the `Updated:` line in the log entry (Step 7) if a line was removed.
+
+---
+
+## Step 9 — Scan for dangling references
 
 Build the **archived-slugs set**: the slug being removed plus every cascaded sub-slug (for an umbrella) plus every companion slug derived from `raw_files:` (for a unified page).
 
@@ -160,7 +170,7 @@ Collect all matches as `{file, line, match}` and present them in the report belo
 
 ---
 
-## Step 9 — Git
+## Step 10 — Git
 
 No agent commits — see SKILL.md Git policy.
 
